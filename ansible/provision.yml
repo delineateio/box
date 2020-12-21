@@ -1,0 +1,348 @@
+---
+- name: Bootstrap
+  connection: local
+  gather_facts: false
+  hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  become: true
+  tasks:
+
+   - name: Add Bootstrap Files # add files
+     copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      mode: 777
+     with_items:
+      - { name: hush, src: ./files/.hushlogin, dest: ~/.hushlogin }
+      - { name: nano, src: ./files/.nanorc, dest: ~/.nanorc }
+      - { name: profile, src: ./files/.bash_profile, dest: ~/.bash_profile }
+      - { name: colours, src: ./files/.colours, dest: ~/.colours }
+     loop_control:
+      label: '{{ item.name }}'
+     become_user: vagrant
+
+   - block: # time sync
+      - name: Add Cloudflare File
+        copy:
+          src: ./config/timesyncd.conf
+          dest: /etc/systemd/timesyncd.conf
+      - name: Set NTP On
+        command: timedatectl set-ntp true
+      - name: TimeSync Service
+        systemd:
+          name: systemd-timesyncd.service
+          state: started
+          enabled: yes
+
+# installs (apt) -----------------------------------------------------
+
+   - block: # apt keys
+      - name: Add Keys by Url
+        apt_key:
+          url: '{{ item.url }}'
+        with_items:
+          - { name: docker, url: 'https://download.docker.com/linux/ubuntu/gpg'  }
+          - { name: gcloud, url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'}
+          - { name: nodejs, url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key' }
+        loop_control:
+          label: '{{ item.name }}'
+      - name: Add Keys Directly
+        apt_key:
+          keyserver: keyserver.ubuntu.com
+          id: '{{ item.key }}'
+        with_items:
+          - { name: github, key: C99B11DEB97541F0 }
+          - { name: osquery, key: 1484120AC4E9F8A1A577AEEE97A80C63C9D8B80B }
+        loop_control:
+          label: '{{ item.name }}'
+
+   - name: Add Apt Repos # apt repos
+     apt_repository:
+      repo: '{{ item.repo }}'
+      state: present
+     with_items:
+      - { name: docker, repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable' }
+      - { name: gcloud, repo: 'deb https://packages.cloud.google.com/apt cloud-sdk main' }
+      - { name: github, repo: 'deb https://cli.github.com/packages bionic main' }
+      - { name: nodejs, repo: 'deb https://deb.nodesource.com/node_10.x bionic main' }
+      - { name: nodejs, repo: 'deb-src https://deb.nodesource.com/node_10.x bionic main' }
+      - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
+      - { name: ruby, repo: 'ppa:brightbox/ruby-ng' }
+     loop_control:
+      label: '{{ item.name }}'
+
+   - name: Upgrade Apt
+     apt:
+      upgrade: "yes"
+      update_cache: true
+      cache_valid_time: 604800 # one week
+
+
+   - name: Install Apt Packages
+     apt:
+      pkg:
+       - apt-transport-https=1.6.12ubuntu0.2
+       - build-essential=12.4ubuntu1
+       - containerd.io=1.4.3-1
+       - default-jre=2:1.11-68ubuntu1~18.04.1
+       - docker-ce-cli=5:20.10.1~3-0~ubuntu-bionic
+       - docker-ce=5:20.10.1~3-0~ubuntu-bionic
+       - figlet=2.2.5-3
+       - fonts-firacode=1.204-2
+       - gh=1.4.0
+       - gnupg2=2.2.4-1ubuntu1.3
+       - google-cloud-sdk-skaffold=321.0.0-0
+       - google-cloud-sdk=321.0.0-0
+       - httpie=0.9.8-2
+       - iotop=0.6-2
+       - jq=1.5+dfsg-2
+       - kubectl=1.20.0-00
+       - lolcat=42.0.99-1
+       - mtr=0.92-1
+       - neofetch=3.4.0-1
+       - nginx=1.14.0-0ubuntu1.7
+       - nmap=7.60-1ubuntu5
+       - nmon=16g+debian-3
+       - nodejs=10.23.1-1nodesource1
+       - osquery=4.5.1-1.linux
+       - pinentry-curses=1.1.0-1
+       - pinentry-gtk2=1.1.0-1
+       - pkg-config=0.29.1-0ubuntu2
+       - postgresql-client=10+190ubuntu0.1
+       - python3-pip=9.0.1-2.3~ubuntu1.18.04.4
+       - rlwrap=0.43-1
+       - rng-tools=5-0ubuntu4
+       - ruby2.6-dev=2.6.6-1bbox1~bionic1
+       - ruby2.6=2.6.6-1bbox1~bionic1
+       - shellcheck=0.4.6-1
+       - tree=1.7.0-5
+       - unzip=6.0-21ubuntu1.1
+       - zip=3.0-11build1
+      state: present
+
+   - name: Install Deb Packages
+     apt:
+      deb: '{{ item.deb }}'
+     with_items:
+      - { name: bat, deb: 'https://github.com/sharkdp/bat/releases/download/v0.17.1/bat_0.17.1_amd64.deb' }
+      - { name: octant, deb: 'https://github.com/vmware-tanzu/octant/releases/download/v0.16.3/octant_0.16.3_Linux-64bit.deb' }
+      - { name: scala, deb: 'https://downloads.lightbend.com/scala/2.12.12/scala-2.12.12.deb' }
+      - { name: trivy, deb: 'https://github.com/aquasecurity/trivy/releases/download/v0.9.1/trivy_0.9.1_Linux-64bit.deb' }
+     loop_control:
+      label: '{{ item.name }}'
+
+   - name: Clean Apt Packages
+     apt:
+      autoremove: yes
+      autoclean: yes
+
+# installs (other) ---------------------------------------------------
+
+   - name: Install Npm Packages
+     npm:
+      name: snyk
+      version: 1.437.3
+      state: present
+      global: yes
+     with_items:
+      - { name: snyk, version: 1.437.3 }
+     loop_control:
+      label: '{{ item.name }}'
+
+   - name: Install Pip Packages
+     pip:
+      name:
+       - pre-commit==2.9.3
+       - detect-secrets==0.14.3
+       - docker==4.4.1
+
+   - block: # shell installs
+      - name: Unarchive Installs  - Root
+        unarchive:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+          creates: '{{ item.creates }}'
+          remote_src: yes
+        with_items:
+          - { name: golang, src: 'https://golang.org/dl/go1.15.6.linux-amd64.tar.gz', dest: /, creates: /go/bin }
+          - { name: packer, src: 'https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
+          - { name: terraform, src: 'https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/terraform}
+          - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
+        loop_control:
+          label: '{{ item.name }}'
+
+   - name: Get Url Installs
+     get_url:
+      url: '{{ item.url }}'
+      dest: '{{ item.dest }}'
+      mode: 777
+     with_items:
+      - { name: hey, url: 'https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64', dest: /usr/local/bin/hey }
+      - { name: mkcert, url: 'https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64', dest: /usr/local/bin/mkcert }
+      - { name: st, url: 'https://storage.googleapis.com/container-structure-test/v1.9.1/container-structure-test-linux-amd64', dest: /usr/local/bin/container-structure-test }
+     loop_control:
+      label: '{{ item.name }}'
+
+   - block: # shell installs
+      - name: Shell Installs - Root
+        shell:
+          cmd: '{{ item.cmd }}'
+          creates: '{{ item.creates }}'
+        args:
+          warn: false
+        with_items:
+          - { name: bat, cmd: 'curl -fsSL https://starship.rs/install.sh | bash -s -- -y', creates: /usr/local/bin/starship }
+          - { name: clojure, cmd: 'curl -fLSs https://download.clojure.org/install/linux-install-1.10.1.763.sh | bash', creates: /usr/local/bin/clj }
+          - { name: circleci, cmd: 'curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | VERSION=0.1.11540 bash', creates: /usr/local/bin/circleci}
+          - { name: golangci, cmd: 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.33.0', creates: /usr/local/bin/golangci-lint}
+          - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v 4.24.8 -P inspec', creates: /usr/bin/inspec }
+        loop_control:
+          label: '{{ item.name }}'
+      - name: Shell Installs - User
+        shell:
+          cmd: curl https://sh.rustup.rs -sSf | sh -s -- -y
+          creates: ~/.cargo/bin/rustc
+        args:
+          warn: false
+        become_user: vagrant
+
+# general config -----------------------------------------------------
+
+   - block: # user config
+      - name: Create Config Directory
+        file:
+          path: ~/.config
+          state: directory
+      - name: Configure Starship
+        copy:
+          src: ./config/starship.toml
+          dest: ~/.config/starship.toml
+      - name: Configure Bat
+        copy:
+          src: ./config/bat.conf
+          dest: ~/.config/bat.conf
+        become_user: vagrant
+
+# git ----------------------------------------------------------------
+
+      - name: Configure Git # git
+        copy:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+        with_items:
+          - { name: gitconfig, src: ./config/.gitconfig, dest: ~/.gitconfig }
+          - { name: gitignore, src: ./files/.gitignore_global, dest: ~/.gitignore_global }
+          - { name: gitmessage, src: ./files/.gitmessage, dest: ~/.gitmessage }
+        loop_control:
+          label: '{{ item.name }}'
+     become_user: vagrant
+
+# docker -------------------------------------------------------------
+
+   - block: # docker
+      - name: Create Docker Group
+        group:
+          name: docker
+          state: present
+      - name: Add Docker Group
+        user:
+          name: vagrant
+          groups: docker
+          append: yes
+      - name: Start Docker Service
+        systemd:
+          name: docker.service
+          daemon_reload: yes
+          enabled: yes
+          state: started
+      - name: Docker Prune Cron Job
+        cron:
+          name: docker prune
+          hour: "02"
+          job: docker system prune -f
+          user: vagrant
+          cron_file: docker_prune
+
+# kubectl ------------------------------------------------------------
+
+      - name: Create .kube Directory
+        file:
+          path: ~/.kube
+          state: directory
+          owner: vagrant
+          mode: 0777
+        become_user: vagrant
+
+# postgres -----------------------------------------------------------
+
+   - block: # postgres
+      - name: Postgres Container
+        docker_container:
+          name: postgres
+          image: postgres:11.6
+          state: started
+          restart_policy: always
+          ports:
+          - "5432:5432"
+          env:
+            SECRET_KEY: postgres
+      - name: Add pgpass Config
+        copy:
+          remote_src: yes
+          src: ./files/.pgpass
+          dest: ~/.pgpass
+          owner: root
+          mode: 0600
+
+# octant -------------------------------------------------------------
+
+   - block: # octant
+      - name: Add Octant Service
+        copy:
+          remote_src: yes
+          src: ./services/octant.service
+          dest: /etc/systemd/system/octant.service
+          owner: root
+          mode: 777
+      - name: Start Octant Service
+        systemd:
+          name: octant.service
+          enabled: yes
+          state: started
+          daemon_reload: yes
+
+# certs --------------------------------------------------------------
+
+   - block: # self signed cert
+      - name: Create Tls Directory
+        file:
+          path: /tls
+          state: directory
+          mode: 0755
+      - name: Generate Tls Certs
+        shell: |
+          mkcert -uninstall
+          mkcert -install
+          mkcert -cert-file /tls/delineateio.local.crt -key-file /tls/delineateio.local.key 'delineateio.local' localhost 127.0.0.1 ::1
+        args:
+          creates: /tls/delineateio.local.crt
+
+# nginx --------------------------------------------------------------
+
+   - block: # nginx
+      - name: Remove Default Nginx Config
+        file:
+          path: /etc/nginx/sites-enabled/default
+          state: absent
+      - name: Add Nginx Config
+        copy:
+          src: ./config/nginx.conf
+          dest: /etc/nginx/sites-enabled/nginx.conf
+          mode: 777
+      - name: Start Nginx Service
+        systemd:
+          name:  nginx.service
+          enabled: yes
+          state: started
+          daemon_reload: yes

@@ -1,0 +1,37 @@
+format = [
+    "kubernetes",
+    "directory",
+    "git_branch",
+    "git_commit",
+    "git_state",
+    "git_status",
+    "hg_branch",
+    "golang",
+    "nodejs",
+    "ruby",
+    "python",
+    "rust",
+    "terraform",
+    "aws",
+]
+
+[character]
+success_symbol = "[➜](bold green)"
+
+[ruby]
+symbol = "🔺 "
+
+[gcloud]
+format = 'on $symbol $project($style) '
+
+[python]
+python_binary = "python3"
+
+[username]
+disabled = true
+
+[hostname]
+disabled = true
+
+[cmd_duration]
+disabled = true

@@ -1,0 +1,19 @@
+[Unit]
+Description=Octant
+Documentation=https://octant.dev/docs/master/
+After=network.target
+
+[Service]
+User=vagrant
+Group=vagrant
+ExecStart=/usr/local/bin/octant --disable-open-browser --listener-addr 0.0.0.0:7777
+ExecReload=/usr/local/bin/octant --disable-open-browser --listener-addr 0.0.0.0:7777
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=512
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
