@@ -12,7 +12,6 @@
      copy:
       src: '{{ item.src }}'
       dest: '{{ item.dest }}'
-      mode: 777
      with_items:
       - { name: hush, src: ./files/.hushlogin, dest: ~/.hushlogin }
       - { name: nano, src: ./files/.nanorc, dest: ~/.nanorc }
@@ -176,7 +175,7 @@
      get_url:
       url: '{{ item.url }}'
       dest: '{{ item.dest }}'
-      mode: 777
+      mode: '755'
      with_items:
       - { name: hey, url: 'https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64', dest: /usr/local/bin/hey }
       - { name: mkcert, url: 'https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64', dest: /usr/local/bin/mkcert }
@@ -271,7 +270,6 @@
           path: ~/.kube
           state: directory
           owner: vagrant
-          mode: 0777
         become_user: vagrant
 
 # postgres -----------------------------------------------------------
@@ -293,7 +291,7 @@
           src: ./files/.pgpass
           dest: ~/.pgpass
           owner: root
-          mode: 0600
+          mode: '600'
 
 # octant -------------------------------------------------------------
 
@@ -304,7 +302,6 @@
           src: ./services/octant.service
           dest: /etc/systemd/system/octant.service
           owner: root
-          mode: 777
       - name: Start Octant Service
         systemd:
           name: octant.service
@@ -319,7 +316,7 @@
         file:
           path: /tls
           state: directory
-          mode: 0755
+          mode: '755'
       - name: Generate Tls Certs
         shell: |
           mkcert -uninstall
@@ -339,7 +336,6 @@
         copy:
           src: ./config/nginx.conf
           dest: /etc/nginx/sites-enabled/nginx.conf
-          mode: 777
       - name: Start Nginx Service
         systemd:
           name:  nginx.service
