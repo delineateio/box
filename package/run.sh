@@ -10,6 +10,8 @@ set -e
 # Comment       : None
 ###################################################################
 
+cd "$(git rev-parse --show-toplevel)"
+
 BOX_DIR=./.boxes
 BOX_PROVIDER=virtualbox
 BOX=${BOX_DIR}/box-${BOX_PROVIDER}.box

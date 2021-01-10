@@ -1,7 +1,8 @@
 [alias]
-	pretty = !git log --pretty=oneline --abbrev-commit -n 10
 	initial = !git rebase -i --root $(git rev-parse --abbrev-ref HEAD)
-	last = !git show -s --format=%B HEAD~1
+	last = !git log --format=%B -1
+	pretty = !git log --pretty=oneline --abbrev-commit -n 10
+	root = cd $(git rev-parse --show-toplevel)
 [commit]
 	template = ~/.gitmessage
 	gpgsign=true
@@ -11,3 +12,5 @@
 	pager = cat
 [gpg]
 	program=gpg2
+[pull]
+	ff=only

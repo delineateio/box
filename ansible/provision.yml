@@ -8,27 +8,48 @@
   become: true
   tasks:
 
-   - name: Add Bootstrap Files # add files
+   - name: Create hush file
+     file:
+       path: ~/.hushlogin
+       state: touch
+       modification_time: preserve
+       access_time: preserve
+     become_user: vagrant
+
+   - name: Create logs directory
+     file:
+       path: ~/.logs
+       state: directory
+     become_user: vagrant
+
+   - name: Add scripts
+     copy:
+       src: ./scripts/
+       dest: ~/.scripts/
+     become_user: vagrant
+
+   - name: Add bootstrap files # add files
      copy:
       src: '{{ item.src }}'
       dest: '{{ item.dest }}'
      with_items:
-      - { name: hush, src: ./files/.hushlogin, dest: ~/.hushlogin }
-      - { name: nano, src: ./files/.nanorc, dest: ~/.nanorc }
-      - { name: profile, src: ./files/.bash_profile, dest: ~/.bash_profile }
-      - { name: colours, src: ./files/.colours, dest: ~/.colours }
+      - { name: colours, src: ./config/colours, dest: ~/.colours }
+      - { name: nano, src: ./config/nanorc, dest: ~/.nanorc }
+      - { name: pre-commit, src: ./config/pre-commit-config.yaml, dest: ~/.pre-commit-config.yaml }
+      - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile }
+      - { name: title, src: ./config/title, dest: ~/.title }
      loop_control:
       label: '{{ item.name }}'
      become_user: vagrant
 
    - block: # time sync
-      - name: Add Cloudflare File
+      - name: Add Cloudflare file
         copy:
           src: ./config/timesyncd.conf
           dest: /etc/systemd/timesyncd.conf
-      - name: Set NTP On
+      - name: Set ntp On
         command: timedatectl set-ntp true
-      - name: TimeSync Service
+      - name: TimeSync service
         systemd:
           name: systemd-timesyncd.service
           state: started
@@ -37,7 +58,7 @@
 # installs (apt) -----------------------------------------------------
 
    - block: # apt keys
-      - name: Add Keys by Url
+      - name: Add keys by url
         apt_key:
           url: '{{ item.url }}'
         with_items:
@@ -46,7 +67,7 @@
           - { name: nodejs, url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key' }
         loop_control:
           label: '{{ item.name }}'
-      - name: Add Keys Directly
+      - name: Add keys directly
         apt_key:
           keyserver: keyserver.ubuntu.com
           id: '{{ item.key }}'
@@ -56,7 +77,7 @@
         loop_control:
           label: '{{ item.name }}'
 
-   - name: Add Apt Repos # apt repos
+   - name: Add apt repos # apt repos
      apt_repository:
       repo: '{{ item.repo }}'
       state: present
@@ -71,14 +92,13 @@
      loop_control:
       label: '{{ item.name }}'
 
-   - name: Upgrade Apt
+   - name: Upgrade apt
      apt:
       upgrade: "yes"
       update_cache: true
       cache_valid_time: 604800 # one week
 
-
-   - name: Install Apt Packages
+   - name: Install apt packages
      apt:
       pkg:
        - apt-transport-https=1.6.12ubuntu0.2
@@ -96,7 +116,7 @@
        - httpie=0.9.8-2
        - iotop=0.6-2
        - jq=1.5+dfsg-2
-       - kubectl=1.20.0-00
+       - kubectl=1.20.1-00
        - lolcat=42.0.99-1
        - mtr=0.92-1
        - neofetch=3.4.0-1
@@ -119,8 +139,10 @@
        - unzip=6.0-21ubuntu1.1
        - zip=3.0-11build1
       state: present
+      force: true
+      install_recommends: no
 
-   - name: Install Deb Packages
+   - name: Install deb packages
      apt:
       deb: '{{ item.deb }}'
      with_items:
@@ -131,47 +153,49 @@
      loop_control:
       label: '{{ item.name }}'
 
-   - name: Clean Apt Packages
+   - name: Clean apt packages
      apt:
       autoremove: yes
       autoclean: yes
 
 # installs (other) ---------------------------------------------------
 
-   - name: Install Npm Packages
+   - name: Install npm packages
      npm:
-      name: snyk
-      version: 1.437.3
+      name: '{{ item.name }}'
+      version: '{{ item.version }}'
       state: present
       global: yes
      with_items:
+      - { name: express, version: 4.17.1 }
       - { name: snyk, version: 1.437.3 }
+      - { name: serverless, version: 2.18.0 }
      loop_control:
       label: '{{ item.name }}'
 
-   - name: Install Pip Packages
+   - name: Install pip packages
      pip:
       name:
-       - pre-commit==2.9.3
        - detect-secrets==0.14.3
        - docker==4.4.1
+       - pre-commit==2.9.3
 
    - block: # shell installs
-      - name: Unarchive Installs  - Root
+      - name: Unarchive installs (root)
         unarchive:
           src: '{{ item.src }}'
           dest: '{{ item.dest }}'
           creates: '{{ item.creates }}'
           remote_src: yes
         with_items:
+          - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
           - { name: golang, src: 'https://golang.org/dl/go1.15.6.linux-amd64.tar.gz', dest: /, creates: /go/bin }
           - { name: packer, src: 'https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
           - { name: terraform, src: 'https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/terraform}
-          - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
         loop_control:
           label: '{{ item.name }}'
 
-   - name: Get Url Installs
+   - name: Get url installs
      get_url:
       url: '{{ item.url }}'
       dest: '{{ item.dest }}'
@@ -184,7 +208,7 @@
       label: '{{ item.name }}'
 
    - block: # shell installs
-      - name: Shell Installs - Root
+      - name: Shell installs (root)
         shell:
           cmd: '{{ item.cmd }}'
           creates: '{{ item.creates }}'
@@ -198,7 +222,7 @@
           - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v 4.24.8 -P inspec', creates: /usr/bin/inspec }
         loop_control:
           label: '{{ item.name }}'
-      - name: Shell Installs - User
+      - name: Shell installs (vagrant)
         shell:
           cmd: curl https://sh.rustup.rs -sSf | sh -s -- -y
           creates: ~/.cargo/bin/rustc
@@ -209,15 +233,15 @@
 # general config -----------------------------------------------------
 
    - block: # user config
-      - name: Create Config Directory
+      - name: Create config directory
         file:
           path: ~/.config
           state: directory
-      - name: Configure Starship
+      - name: Configure starship
         copy:
           src: ./config/starship.toml
           dest: ~/.config/starship.toml
-      - name: Configure Bat
+      - name: Configure bat
         copy:
           src: ./config/bat.conf
           dest: ~/.config/bat.conf
@@ -225,14 +249,14 @@
 
 # git ----------------------------------------------------------------
 
-      - name: Configure Git # git
+      - name: Configure git # git
         copy:
           src: '{{ item.src }}'
           dest: '{{ item.dest }}'
         with_items:
-          - { name: gitconfig, src: ./config/.gitconfig, dest: ~/.gitconfig }
-          - { name: gitignore, src: ./files/.gitignore_global, dest: ~/.gitignore_global }
-          - { name: gitmessage, src: ./files/.gitmessage, dest: ~/.gitmessage }
+          - { name: gitconfig, src: ./config/gitconfig, dest: ~/.gitconfig }
+          - { name: gitignore, src: ./config/gitignore_global, dest: ~/.gitignore_global }
+          - { name: gitmessage, src: ./config/gitmessage, dest: ~/.gitmessage }
         loop_control:
           label: '{{ item.name }}'
      become_user: vagrant
@@ -240,7 +264,7 @@
 # docker -------------------------------------------------------------
 
    - block: # docker
-      - name: Create Docker Group
+      - name: Create docker group
         group:
           name: docker
           state: present
@@ -249,13 +273,13 @@
           name: vagrant
           groups: docker
           append: yes
-      - name: Start Docker Service
+      - name: Start docker service
         systemd:
           name: docker.service
           daemon_reload: yes
           enabled: yes
           state: started
-      - name: Docker Prune Cron Job
+      - name: Docker prune cron job
         cron:
           name: docker prune
           hour: "02"
@@ -265,7 +289,7 @@
 
 # kubectl ------------------------------------------------------------
 
-      - name: Create .kube Directory
+      - name: Create .kube directory
         file:
           path: ~/.kube
           state: directory
@@ -274,8 +298,8 @@
 
 # postgres -----------------------------------------------------------
 
-   - block: # postgres
-      - name: Postgres Container
+   - block:
+      - name: Postgres container
         docker_container:
           name: postgres
           image: postgres:11.6
@@ -285,24 +309,24 @@
           - "5432:5432"
           env:
             SECRET_KEY: postgres
-      - name: Add pgpass Config
+      - name: Add .pgpass file
         copy:
           remote_src: yes
-          src: ./files/.pgpass
-          dest: ~/.pgpass
+          src: ./config/pgpass
+          dest: ~/pgpass
           owner: root
           mode: '600'
 
 # octant -------------------------------------------------------------
 
    - block: # octant
-      - name: Add Octant Service
+      - name: Add octant service
         copy:
           remote_src: yes
           src: ./services/octant.service
           dest: /etc/systemd/system/octant.service
           owner: root
-      - name: Start Octant Service
+      - name: Start octant service
         systemd:
           name: octant.service
           enabled: yes
@@ -312,12 +336,12 @@
 # certs --------------------------------------------------------------
 
    - block: # self signed cert
-      - name: Create Tls Directory
+      - name: Create tls directory
         file:
           path: /tls
           state: directory
           mode: '755'
-      - name: Generate Tls Certs
+      - name: Generate tls certificate
         shell: |
           mkcert -uninstall
           mkcert -install
@@ -328,15 +352,15 @@
 # nginx --------------------------------------------------------------
 
    - block: # nginx
-      - name: Remove Default Nginx Config
+      - name: Remove default nginx config
         file:
           path: /etc/nginx/sites-enabled/default
           state: absent
-      - name: Add Nginx Config
+      - name: Add nginx config
         copy:
           src: ./config/nginx.conf
           dest: /etc/nginx/sites-enabled/nginx.conf
-      - name: Start Nginx Service
+      - name: Start nginx service
         systemd:
           name:  nginx.service
           enabled: yes

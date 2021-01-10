@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
   config.vm.hostname    = "delineateio"
   config.vm.box         = "ubuntu/bionic64"
   config.vm.box_version = "20201211.1.0"
-  
+
   config.vm.provider "virtualbox" do |virtualbox|
     virtualbox.memory = 4096
     virtualbox.cpus   = 4
@@ -25,11 +25,10 @@ Vagrant.configure("2") do |config|
     ansible.verbose           = false
   end
 
-  # if ENV["BOX_BUILD"] != ""
   if box_build == 'true'
     # scrips modified from Chef bento project
-    config.vm.provision "shell", path: "./scripts/cleanup.sh", :privileged => true
-    config.vm.provision "shell", path: "./scripts/minimize.sh", :privileged => true
+    config.vm.provision "shell", path: "./package/cleanup.sh", :privileged => true
+    config.vm.provision "shell", path: "./package/minimize.sh", :privileged => true
   end
 
   config.vm.post_up_message = "For are now ready to develop for https://www.delineate.io"

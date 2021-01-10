@@ -13,11 +13,22 @@
 
 The purpose of **box** is to provide a general purpose development `vagrant` box with a pre-installed set of useful tools.  Over time the installed tools is expected to be expanded.
 
+### Startup
+
+The `box` is deliberately opinionated.  When an `ssh` session is established ...
+
+* The log in process to `github` is initiated using `gh` if required and the credential helper associated with `git`
+* A `gpg` key is created and configured as the signing key for `git` so commits can be verified
+* If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically logged in
+* An empty project pre-configured with `pre-commit` and `detect-secrets`
+
 ## Usage
 
 ### Mandatory Requirements
 
-The solution primarily uses [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development Ubuntu 18.04 machine.  The following commands will install the mandatory requirements on macOS.
+The solution primarily uses [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
+
+The following commands will install the mandatory requirements on macOS using `brew`
 
 ```shell
 # Installs Ansible, VirtualBox & Vagrant
@@ -44,7 +55,7 @@ brew install --cask vagrant-manager
 
 ### Project Configuration
 
-The VM box created by this project is hosted on Hashicorp Vagrant Cloud [here](https://app.vagrantup.com/delineateio/boxes/box).  Consult the `vagrant` documentation for more details, below shows the minimum configuration required in the `vagrantfile` to use the box.
+The VM box created by this project is hosted on Hashicorp Vagrant Cloud [here](https://app.vagrantup.com/delineateio/boxes/box).  Consult the `vagrant` documentation for more details, below shows the minimum configuration required in a `vagrantfile` to use the box.
 
 ```ruby
 Vagrant.configure("2") do |config|
@@ -66,7 +77,7 @@ In the directory where the `vagrantfile` is located the command to `vagrant up -
 
 The following tools and languages are automatically installed using `ansible` as part of the provisioning and configuration process
 
-> There are some further details provided below on elements of the configuration
+> There are some further details provided below on elements of the configuration of some of the most important packaged tools.
 
 ### General Tools
 
@@ -133,7 +144,7 @@ The following tools and languages are automatically installed using `ansible` as
 
 #### Profile Shell Alias
 
-Using `profile` will display the current contents of `~/.bash_profile` using `bat`.
+Using `profile` will display the current contents of `$HOME/.bash_profile` using `bat`.
 ![profile](./assets/profile.png)
 
 #### Clear Shell Alias
@@ -150,29 +161,41 @@ Changes the working directory to `$HOME` and runs `clear`.  Ultimate the view is
 
 The `starship` prompt has been installed and configured with simplified configuration from the defaults.  To review the configuration run `bat $HOME/.config/starship.toml`.
 
-### Git
+### gCloud
+
+The `delineateio` projects are generally hosted on `gcp` by mounting a service account at `$HOME/.gcloud.json`.  This will ensure the authentication is automated.  The configuration to achieve this will look similar to the code block shown below.
+
+```ruby
+Vagrant.configure("2") do |config|
+
+  # adds the .gcloud.json file to allow automation
+  config.vm.provision "file", :run => 'always', source: "~/.gcloud/key.json", destination: "$HOME/.gcloud.json"
+
+end
+```
+
+### GitHub & Git
 
 #### Overview
 
-The following configuration is pre-configured for `git`.
+The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.  There should be no need to manually edit any `git` configuration before being able to commit.  To view the current configuration standard commands can be used `git config --list`.
 
-It is still necessary to configure the user in the project `vagrantfile`.
+### GitHub Authentication
+
+![vagrant manager](./assets/github.png)
 
 #### Git Aliases
 
 A number of convenient `git` aliases are provided:
 
-* `git pretty` provides a concise log of the commits
 * `git initial` enables rebasing to the root to help get a clean initial commit
 * `git last` provides a detailed view of the last commit
+* `git pretty` provides a concise log of the commits
+* `git root` shows the absolute path of the projects root directory
 
 #### GPG Commit Signing
 
-`git` is pre-configured by default to use `gpg` signing so commits are verified.  However the key needs setting from within the project.
-
-To learn more read the `github` documentation on [signing commits](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits).
-
-![git config](./assets/git.png)
+`git` is pre-configured by default to use `gpg` signing so commits are verified.  To learn more read the `github` documentation on [signing commits](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits).  At present the `gpg` key found at `$HOME/gpg_public` needs to be manually added to `github`.
 
 ### Postgres
 
@@ -185,11 +208,15 @@ psql -h localhost -U postgres
 > To access the `postgres` container from the host when developing using an IDE on the host port forwarding must be enabled.  It maybe necessary to use a non-standard port to avoid port clashes and provide a predictable port.
 
 ```ruby
-# access to postgres on default port
-config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp"
+Vagrant.configure("2") do |config|
+
+  # access to postgres on default port
+  config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp"
+
+end
 ```
 
-### Docker Housekeeping
+### Docker
 
 In addition to help with housekeeping a `docker prune -f` job is scheduled using `cron`.
 
@@ -202,6 +229,16 @@ A proxy has been setup and configured using `mkcert` to issue self sign certific
 The purpose of this proxy is to provide single access point to services hosted in the VM.
 
 If the configuration is required to be updated then the file at `/etc/nginx/sites-enabled/nginx.conf` can be replaced and the service restarted `sudo systemctl restart nginx.service`.
+
+## Packaging
+
+To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) a scripts has been provided.  This script can be found `./package/run.sh`, this script does a couple of things:
+
+1. Builds the box from scratch to ensure it's boxfesh
+2. Additional scripts are run as part of `vagrant up` to clean and minimise the box
+3. An `md5` checksum is generated so that this can be published with the box
+
+> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento Project](https://github.com/chef/bento).  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
 
 ## Contributing
 
