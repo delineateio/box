@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ###################################################################
 # Script Name   : gcloud.sh
@@ -10,11 +9,35 @@ set -e
 # Email         : jonathan.fenwick@delineate.io
 ###################################################################
 
+set -e
+exec &>> "${HOME}/.box.log"
+
+if [ ! -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]; then
+    # ensures that if key file not present resets state
+    gcloud config unset compute/region
+    gcloud config unset compute/zone
+    gcloud auth revoke
+    echo "No service account was found at '$GOOGLE_APPLICATION_CREDENTIALS'"
+    exit 0
+fi
+
+# extracts the meta data from the service account file
+GOOGLE_SERVICE_ACCOUNT=$(jq -r '.client_email' "${GOOGLE_APPLICATION_CREDENTIALS}")
+GOOGLE_PROJECT=$(jq -r '.project_id' "${GOOGLE_APPLICATION_CREDENTIALS}")
+
 # logs in to GCP
 gcloud auth activate-service-account \
                 "${GOOGLE_SERVICE_ACCOUNT}" \
-                --key-file="${GOOGLE_APPLICATION_CREDENTIALS}" --no-user-output-enabled
+                --key-file="${GOOGLE_APPLICATION_CREDENTIALS}"
 
 # updates the gcloud
-gcloud config set account "${GOOGLE_SERVICE_ACCOUNT}" --no-user-output-enabled
-gcloud config set project "${GOOGLE_PROJECT}" --no-user-output-enabled
+gcloud config set account "${GOOGLE_SERVICE_ACCOUNT}"
+gcloud config set project "${GOOGLE_PROJECT}"
+
+# optionally sets the region and zone if provided
+if [ "${GOOGLE_REGION}" ]; then
+    gcloud config set compute/region "$GOOGLE_REGION"
+fi
+if [ "${GOOGLE_ZONE}" ]; then
+    gcloud config set compute/zone "$GOOGLE_ZONE"
+fi

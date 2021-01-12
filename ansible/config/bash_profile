@@ -1,33 +1,35 @@
+# <!-- alias BEGIN -->
 alias clear="clear && figlet $(cat .title) | lolcat --seed 18" # overrides clear
 alias home="cd ~/ && clear" # overrides clear
 alias profile="bat ~/.bash_profile" # overrides clear
 # <!-- alias END -->
 
+# <!-- path BEGIN -->
 export PATH=$PATH:/go/bin # golang
 export PATH=$PATH:$HOME/.local/bin # pip3
 # <!-- path END -->
 
-GOOGLE_APPLICATION_CREDENTIALS=$HOME/.gcloud.json
-export GOOGLE_APPLICATION_CREDENTIALS
-
-if [ -f $GOOGLE_APPLICATION_CREDENTIALS ]; then
-    GOOGLE_SERVICE_ACCOUNT="$(cat $HOME/.gcloud.json | jq -r '.client_email')"
-    export GOOGLE_SERVICE_ACCOUNT
-    GOOGLE_PROJECT="$(cat $HOME/.gcloud.json | jq -r '.project_id')"
-    export GOOGLE_PROJECT
-fi
-# <!-- google END -->
-
+# <!-- env BEGIN -->
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.gcloud.json
+export CIRCLECI_CLI_HOST=https://circleci.com
 export BAT_CONFIG_PATH="$HOME/.config/bat.conf"
-GPG_TTY="$(tty)"
-export GPG_TTY
+export GPG_TTY="$(tty)"
 # <!-- env END -->
 
+# <!-- source BEGIN -->
+source "$HOME/.env"
+source "$HOME/.cargo/env"
+# <!-- source END -->
+
+# <!-- eval BEGIN -->
 eval "$(starship init bash)"
 # <!-- eval END -->
 
+# <!-- clear BEGIN -->
 clear
 # <!-- clear END -->
 
+# <!-- init BEGIN -->
 bash "$HOME/.scripts/init.sh"
+cd "$HOME/project"
 # <!-- init END -->

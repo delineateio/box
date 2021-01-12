@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ###################################################################
 # Script Name   : init.sh
@@ -10,10 +9,17 @@ set -e
 # Email         : jonathan.fenwick@delineate.io
 ###################################################################
 
-bash "$HOME/.scripts/gh.sh"
-bash "$HOME/.scripts/gpg.sh"
-bash "$HOME/.scripts/git.sh"
-if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-    bash "$HOME/.scripts/gcloud.sh"
-fi
-bash "$HOME/.scripts/project.sh"
+set -e
+
+SCRIPTS="${HOME}/.scripts"
+
+# clears log between runs
+rm -rf "${HOME}.box.log"
+
+# executes the required scripts
+bash "${SCRIPTS}/gh.sh"
+bash "${SCRIPTS}/gpg.sh"
+bash "${SCRIPTS}/git.sh"
+bash "${SCRIPTS}/gcloud.sh"
+bash "${SCRIPTS}/kube.sh"
+bash "${SCRIPTS}/project.sh"

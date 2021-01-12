@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ###################################################################
 # Script Name   : project.sh
@@ -9,36 +8,39 @@ set -e
 # Email         : jonathan.fenwick@delineate.io
 ###################################################################
 
-PROJECT_DIR="$HOME"/project
-PROJECT_LOG="$HOME"/.logs/.project.log
-PROJECT_SECRETS="$PROJECT_DIR"/.secrets.baseline
+set -e
+exec &>> "${HOME}/.box.log"
 
-# removes log file
-touch "$PROJECT_LOG"
+PROJECT_DIR="${HOME}/project"
+PRE_COMMIT=".pre-commit-config.yaml"
+PROJECT_PRE_COMMIT="${PROJECT_DIR}/${PRE_COMMIT}"
+PROJECT_SECRETS="${PROJECT_DIR}/.secrets.baseline"
 
 # creates the project folder if required
-if [ ! -d "$PROJECT_DIR" ]; then
-  mkdir -pv "$PROJECT_DIR" >> "$PROJECT_LOG"
+if [ ! -d "${PROJECT_DIR}" ]; then
+  mkdir -pv "${PROJECT_DIR}"
 else
-  echo "folder '$PROJECT_LOG' exists" >> "$PROJECT_LOG"
+  echo "folder '${PROJECT_DIR}' exists"
 fi
 
-if [ ! -d .git ]; then
-  git init "$PROJECT_DIR" >> "$PROJECT_LOG"
+# initialises git if required
+if [ ! -d "${PROJECT_DIR}/.git" ]; then
+  git init "${PROJECT_DIR}"
 else
-  echo "git already initialised" >> "$PROJECT_LOG"
+  echo "git already initialised"
 fi
 
-if [ ! -f "$PROJECT_DIR"/.pre-commit-config.yaml ]; then
-  cp -v "$HOME"/.pre-commit-config.yaml "$PROJECT_DIR"/.pre-commit-config.yaml >> "$PROJECT_LOG"
+if [ ! -f "${PROJECT_PRE_COMMIT}" ]; then
+  cp -v "${HOME}/${PRE_COMMIT}" "${PROJECT_PRE_COMMIT}"
 else
-  echo "pre-commit config exists" >> "$PROJECT_LOG"
+  echo "pre-commit config exists"
 fi
 
-if [ ! -f "$PROJECT_SECRETS" ]; then
-  detect-secrets scan "$PROJECT_DIR" > "$PROJECT_SECRETS"
+if [ ! -f "${PROJECT_SECRETS}" ]; then
+  detect-secrets scan "${PROJECT_DIR}" > "${PROJECT_SECRETS}"
 else
-  echo "detect secrets baseline exists" >> "$PROJECT_LOG"
+  echo "detect secrets baseline exists"
 fi
 
-pre-commit install >> "$PROJECT_LOG"
+# install hooks
+cd "${HOME}/project" && pre-commit install

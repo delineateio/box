@@ -13,22 +13,25 @@
 
 The purpose of **box** is to provide a general purpose development `vagrant` box with a pre-installed set of useful tools.  Over time the installed tools is expected to be expanded.
 
-### Startup
+### Opinionated Initialisation
 
 The `box` is deliberately opinionated.  When an `ssh` session is established ...
 
 * The log in process to `github` is initiated using `gh` if required and the credential helper associated with `git`
 * A `gpg` key is created and configured as the signing key for `git` so commits can be verified
-* If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically logged in
-* An empty project pre-configured with `pre-commit` and `detect-secrets`
+* If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically authenticated and configured
+* If a GKE cluster name is provided then `kubectl` is automatically authenticated and configured
+* An empty project is created if it does not exist pre-configured with `pre-commit` and `detect-secrets`
 
-## Usage
+> More detail is provided below on how this initialisation can be configured by projects
 
-### Mandatory Requirements
+## Approach
 
-The solution primarily uses [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
+The solution uses [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
 
-The following commands will install the mandatory requirements on macOS using `brew`
+## Mandatory Requirements
+
+The following commands will install the mandatory requirements on MacOS using `brew`...
 
 ```shell
 # Installs Ansible, VirtualBox & Vagrant
@@ -36,13 +39,13 @@ brew install ansible
 brew install --cask virtualbox vagrant
 ```
 
-> For additional information including alternative installation methods please review the appropriate official documentation
+> For additional information including alternative installation methods please review the official documentation
 
 * [Redhat Ansible](https://docs.ansible.com/)
 * [Oracle VirtualBox docs](https://www.virtualbox.org/wiki/Documentation)
 * [Hashicorp Vagrant docs](https://www.vagrantup.com/docs)
 
-### Optional Requirements
+## Optional Requirements
 
 Optionally Vagrant Manager can be installed on MacOS to provide access from the menu bar.  For more information on Vagrant Manager see [here](https://www.vagrantmanager.com/).
 
@@ -53,7 +56,9 @@ brew install --cask vagrant-manager
 
 ![vagrant manager](./assets/manager.png)
 
-### Project Configuration
+## Project Usage
+
+### Project Vagrantfile
 
 The VM box created by this project is hosted on Hashicorp Vagrant Cloud [here](https://app.vagrantup.com/delineateio/boxes/box).  Consult the `vagrant` documentation for more details, below shows the minimum configuration required in a `vagrantfile` to use the box.
 
@@ -61,7 +66,7 @@ The VM box created by this project is hosted on Hashicorp Vagrant Cloud [here](h
 Vagrant.configure("2") do |config|
 
   config.vm.box = "delineateio/box"
-  config.vm.box_version = "1.2.0"
+  config.vm.box_version = "1.0.1"
 
   # access to postgres on default port
   config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp"
@@ -69,9 +74,68 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-In the directory where the `vagrantfile` is located the command to `vagrant up --provider virtualbox` can be run to create the VM.
+In the directory where the `vagrantfile` is located, the command `vagrant up --provider virtualbox` can be run to create the VM.
 
-> Note that specific port forwarding should be configured to access tools from the host (e.g. `postgres`, `octant`).  It maybe necessary to explicitly set different host ports to get fixed port numbers.
+> Note that specific port forwarding should be configured to access tools from the host (e.g. `postgres`, `octant`).  It maybe necessary to explicitly set different host ports to get stable port numbers.
+
+### Providing Env Variables
+
+Projects can be set simply by overwriting the `~/.env` file inside the VM.  An example of this using `ansible` is shown below.  This snippet can be copied into a project ansible configuration.
+
+### SSH Keys
+
+The `ssh` keys for `git` authentication are required to be copied from the host into the VM in the `~./ssh` directory.  Examples of achieving this using `ansible` or `vagrant` are shown below.
+
+> This approach is used rather than generating individual `ssh` keys to avoid the need to maintain many ssh keys including uploading them into `github`.  It is highly likely that this approach will change in the future to use a secrets management solution.
+
+### Startup Scripts
+
+There are a number of scripts that run as part of initialisation when an `ssh` connection is made to the VM:
+
+| Script | Action |
+| --- | ----------- |
+| gh.sh | Triggers the authentication using [gh](https://cli.github.com/) and association with `git`.  Each time the user connects they will be given the choice to re-authenticate (or not). |
+| gpg.sh | Automates the generation of a `gpg` key.  By default the passphrase will be set to `password`, this can be overridden by setting a `$GPG_PASSPHRASE` env variable. |
+| git.sh | Configures `git` automatically, specifically the name, username and signing key.  These details are available from `gh` and `gpg` scripts. |
+| gcloud.sh | If a `gcp` service account is mounted at `~/.gcloud.json` then the VM is authenticated and `gcloud` configured.  Additionally region and zone can be set by providing  `$GOOGLE_REGION` and `$GOOGLE_ZONE` respectively. |
+| kube.sh | A common scenario is for connectivity being required to a GKE cluster.  By providing an en variable `$GOOGLE_CLUSTER_NAME`. |
+| project.sh | Initalises a project directory if one is not present at `~/project`.  This includes setting up `pre-commit` and `detect-secrets` for the project. |
+
+### Env Variables Example
+
+The following shows an example of an env variables file that can be written to `~/.env` to configure the box.  Further custom variables can be set in this file if required.
+
+> Note that the box will successfully start without any of these env variables being provided.
+
+```shell
+export GPG_PASSPHRASE=delineateio # overwrites gpg passcode
+export GOOGLE_REGION="europe-west2" # gcp region
+export GOOGLE_ZONE="europe-west2-a" # gcp
+export GOOGLE_CLUSTER_NAME=app-cluster # gke cluster name
+export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authenticates to Snyk CLI
+export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
+```
+
+### Copying Files to VM using Ansible
+
+The following snippet can be used in an Ansible playbook to configure the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` or able to `git push` to a remote repository.
+
+```yml
+   - name: Add files
+     copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+     with_items:
+      - { name: gcloud.json, src: ~/.gcloud/delineateio/platform/dev/key.json, dest: ~/.gcloud.json }
+      - { name: id_rsa, src: ~/.ssh/id_rsa, dest: ~/.ssh/id_rsa }
+      - { name: id_rsa.pub, src: ~/.ssh/id_rsa.pub, dest: ~/.ssh/id_rsa.pub }
+      - { name: .env, src: ./.env, dest: ~/.env }
+     loop_control:
+      label: '{{ item.name }}'
+     become_user: vagrant
+```
+
+> It is also possible to also use Vagrant file provisioners to copy the `~/.gcloud.json`, `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files into the VM if preferred.  Read more details about file provisioners [here](https://www.vagrantup.com/docs/provisioning/file)
 
 ## Pre-configured Tools
 
@@ -100,11 +164,12 @@ The following tools and languages are automatically installed using `ansible` as
 * [httpie](https://httpie.io/) - User-friendly command line HTTP client for the API era
 * [jq](https://stedolan.github.io/jq/) - Slice, filter, map and transform JSON data
 
-### Containers & k8s
+### Serverless, Containers & k8s
 
 * [docker](https://www.docker.com/) - Solution for defining and using containers
 * [kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/) - Controls the Kubernetes cluster manager
 * [octant](https://octant.dev/) - Developer-centric web interface for Kubernetes
+* [serverless](https://www.serverless.com/) - Zero-friction serverless development to easily build apps that auto-scale on low cost, next-gen cloud infrastructure
 * [skaffold](https://skaffold.dev/) - Workflow for building, pushing and deploying your k8s applications
 * [st](https://github.com/GoogleContainerTools/container-structure-test) - Powerful framework to validate the structure of a container images
 
@@ -176,11 +241,11 @@ end
 
 ### GitHub & Git
 
-#### Overview
+#### GitHub Authentication
 
-The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.  There should be no need to manually edit any `git` configuration before being able to commit.  To view the current configuration standard commands can be used `git config --list`.
+The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.
 
-### GitHub Authentication
+There should be no need to manually edit any `git` configuration before being able to commit.  To view the current configuration standard commands can be used `git config --list`.
 
 ![vagrant manager](./assets/github.png)
 
@@ -202,6 +267,7 @@ A number of convenient `git` aliases are provided:
 A `docker` container for `postgres:11.6` is deployed as this is the most common database platform used for development.  The container exposes postgres on the standard `5432` port.  To simplify connectivity a `.pgpass` file has been configured to ease connectivity when using `psql`.
 
 ```shell
+# connects to the local postgres instance
 psql -h localhost -U postgres
 ```
 
@@ -209,10 +275,8 @@ psql -h localhost -U postgres
 
 ```ruby
 Vagrant.configure("2") do |config|
-
   # access to postgres on default port
   config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp"
-
 end
 ```
 
@@ -238,7 +302,7 @@ To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) 
 2. Additional scripts are run as part of `vagrant up` to clean and minimise the box
 3. An `md5` checksum is generated so that this can be published with the box
 
-> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento Project](https://github.com/chef/bento).  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
+> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento](https://github.com/chef/bento) project.  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
 
 ## Contributing
 

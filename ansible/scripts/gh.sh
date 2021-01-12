@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ###################################################################
 # Script Name   : gh.sh
@@ -10,11 +9,16 @@ set -e
 # Email         : jonathan.fenwick@delineate.io
 ###################################################################
 
+set -e
+
+GITHUB_USER="${HOME}/.gituser"
+rm -rf "${GITHUB_USER}"
+
 # login to github
 gh config set git_protocol https
 gh auth login -h github.com
 # <!-- login END -->
 
 # overides the github user info
-gh api /user > "$HOME"/.gituser
+gh api /user > "${GITHUB_USER}"
 # <!-- download END -->

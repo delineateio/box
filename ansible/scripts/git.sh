@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ###################################################################
 # Script Name   : git.sh
@@ -9,13 +8,21 @@ set -e
 # Email         : jonathan.fenwick@delineate.io
 ###################################################################
 
-GIT_SIGNING_KEY=$(cat "$HOME/.gpg_id") # reads the key
-GIT_NAME=$(jq -r '.name' "$HOME"/.gituser)
-GIT_EMAIL=$(jq -r '.email' "$HOME"/.gituser)
+set -e
+
+GITHUB_USER="${HOME}/.gituser"
+
+if [ ! -f "${GITHUB_USER}" ]; then
+    echo "Github user file not found at '${GITHUB_USER}'"
+    exit 1
+fi
+
+GIT_NAME=$(jq -r '.name' "${GITHUB_USER}")
+GIT_EMAIL=$(jq -r '.email' "${GITHUB_USER}")
 # <!-- env END -->
 
 # User specific git config
 git config --global user.name "${GIT_NAME}"
 git config --global user.email "${GIT_EMAIL}"
-git config --global user.signingkey "${GIT_SIGNING_KEY}"
+git config --global user.signingkey "$(cat "${HOME}"/.gpg_id)"
 # <!-- config END -->

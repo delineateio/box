@@ -16,10 +16,12 @@
        access_time: preserve
      become_user: vagrant
 
-   - name: Create logs directory
+   - name: Create empty .env file
      file:
-       path: ~/.logs
-       state: directory
+       path: ~/.env
+       state: touch
+       modification_time: preserve
+       access_time: preserve
      become_user: vagrant
 
    - name: Add scripts
@@ -264,7 +266,7 @@
 # docker -------------------------------------------------------------
 
    - block: # docker
-      - name: Create docker group
+      - name: Create Docker group
         group:
           name: docker
           state: present
@@ -313,9 +315,10 @@
         copy:
           remote_src: yes
           src: ./config/pgpass
-          dest: ~/pgpass
-          owner: root
+          dest: ~/.pgpass
+          owner: vagrant
           mode: '600'
+        become_user: vagrant
 
 # octant -------------------------------------------------------------
 
