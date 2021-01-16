@@ -90,13 +90,13 @@
       - { name: nodejs, repo: 'deb https://deb.nodesource.com/node_10.x bionic main' }
       - { name: nodejs, repo: 'deb-src https://deb.nodesource.com/node_10.x bionic main' }
       - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
+      - { name: python, repo: 'ppa:deadsnakes/ppa' }
       - { name: ruby, repo: 'ppa:brightbox/ruby-ng' }
      loop_control:
       label: '{{ item.name }}'
 
-   - name: Upgrade apt
+   - name: Upgrade apt cache
      apt:
-      upgrade: "yes"
       update_cache: true
       cache_valid_time: 604800 # one week
 
@@ -105,16 +105,17 @@
       pkg:
        - apt-transport-https=1.6.12ubuntu0.2
        - build-essential=12.4ubuntu1
+       - gcc=4:7.4.0-1ubuntu2.3
        - containerd.io=1.4.3-1
        - default-jre=2:1.11-68ubuntu1~18.04.1
-       - docker-ce-cli=5:20.10.1~3-0~ubuntu-bionic
-       - docker-ce=5:20.10.1~3-0~ubuntu-bionic
+       - docker-ce-cli=5:20.10.2~3-0~ubuntu-bionic
+       - docker-ce=5:20.10.2~3-0~ubuntu-bionic
        - figlet=2.2.5-3
        - fonts-firacode=1.204-2
        - gh=1.4.0
        - gnupg2=2.2.4-1ubuntu1.3
-       - google-cloud-sdk-skaffold=321.0.0-0
-       - google-cloud-sdk=321.0.0-0
+       - google-cloud-sdk-skaffold=323.0.0-0
+       - google-cloud-sdk=323.0.0-0
        - httpie=0.9.8-2
        - iotop=0.6-2
        - jq=1.5+dfsg-2
@@ -141,7 +142,6 @@
        - unzip=6.0-21ubuntu1.1
        - zip=3.0-11build1
       state: present
-      force: true
       install_recommends: no
 
    - name: Install deb packages
@@ -178,8 +178,8 @@
    - name: Install pip packages
      pip:
       name:
-       - detect-secrets==0.14.3
        - docker==4.4.1
+       - detect-secrets==0.14.3
        - pre-commit==2.9.3
 
    - block: # shell installs
@@ -348,9 +348,9 @@
         shell: |
           mkcert -uninstall
           mkcert -install
-          mkcert -cert-file /tls/delineateio.local.crt -key-file /tls/delineateio.local.key 'delineateio.local' localhost 127.0.0.1 ::1
+          mkcert -cert-file /tls/box.local.crt -key-file /tls/box.local.key 'box.local' localhost 127.0.0.1 ::1
         args:
-          creates: /tls/delineateio.local.crt
+          creates: /tls/box.local.crt
 
 # nginx --------------------------------------------------------------
 

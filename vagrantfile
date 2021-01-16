@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   box_build = ENV["BOX_BUILD"]
 
   # Better maintained than alternative boxes
-  config.vm.hostname    = "delineateio"
+  config.vm.hostname    = "box"
   config.vm.box         = "ubuntu/bionic64"
   config.vm.box_version = "20201211.1.0"
 
