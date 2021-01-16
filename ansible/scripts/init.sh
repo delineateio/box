@@ -2,7 +2,7 @@
 
 ###################################################################
 # Script Name   : init.sh
-# Description   : Program that initialises gcloud by authenticating
+# Description   : Program that initialises the various components
 #               : the provided service account
 # Args          : None
 # Author        : Jonathan Fenwick
@@ -17,9 +17,11 @@ SCRIPTS="${HOME}/.scripts"
 rm -rf "${HOME}.box.log"
 
 # executes the required scripts
+bash "${SCRIPTS}/project.sh"
 bash "${SCRIPTS}/gh.sh"
 bash "${SCRIPTS}/gpg.sh"
 bash "${SCRIPTS}/git.sh"
 bash "${SCRIPTS}/gcloud.sh"
 bash "${SCRIPTS}/kube.sh"
-bash "${SCRIPTS}/project.sh"
+bash "${SCRIPTS}/python.sh"
+bash "${SCRIPTS}/pre-commit.sh"

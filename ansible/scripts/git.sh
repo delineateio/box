@@ -9,8 +9,10 @@
 ###################################################################
 
 set -e
+exec &>> "${HOME}/.box.log"
 
 GITHUB_USER="${HOME}/.gituser"
+PROJECT_DIR="${HOME}/project"
 
 if [ ! -f "${GITHUB_USER}" ]; then
     echo "Github user file not found at '${GITHUB_USER}'"
@@ -26,3 +28,10 @@ git config --global user.name "${GIT_NAME}"
 git config --global user.email "${GIT_EMAIL}"
 git config --global user.signingkey "$(cat "${HOME}"/.gpg_id)"
 # <!-- config END -->
+
+# initialises git if required
+if [ ! -d "${PROJECT_DIR}/.git" ]; then
+  git init "${PROJECT_DIR}"
+else
+  echo "git already initialised"
+fi

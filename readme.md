@@ -116,23 +116,14 @@ export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authentic
 export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
 ```
 
-### Copying Files to VM using Ansible
+### Copying Files to VM
 
-The following snippet can be used in an Ansible playbook to configure the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` or able to `git push` to a remote repository.
+The following snippet can be used in an project Vagrantfile to copy the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` nor able to `git push` to a remote repository.
 
-```yml
-   - name: Add files
-     copy:
-      src: '{{ item.src }}'
-      dest: '{{ item.dest }}'
-     with_items:
-      - { name: gcloud.json, src: ~/.gcloud/delineateio/platform/dev/key.json, dest: ~/.gcloud.json }
-      - { name: id_rsa, src: ~/.ssh/id_rsa, dest: ~/.ssh/id_rsa }
-      - { name: id_rsa.pub, src: ~/.ssh/id_rsa.pub, dest: ~/.ssh/id_rsa.pub }
-      - { name: .env, src: ./.env, dest: ~/.env }
-     loop_control:
-      label: '{{ item.name }}'
-     become_user: vagrant
+```ruby
+config.vm.provision "file", source: "~/.gcloud.json", destination: "~/.gcloud.json"
+config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "~/.ssh/id_rsa"
+config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/id_rsa.pub"
 ```
 
 > It is also possible to also use Vagrant file provisioners to copy the `~/.gcloud.json`, `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files into the VM if preferred.  Read more details about file provisioners [here](https://www.vagrantup.com/docs/provisioning/file)
