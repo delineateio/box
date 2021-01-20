@@ -37,6 +37,9 @@ gcloud auth activate-service-account \
 gcloud config set account "${GOOGLE_SERVICE_ACCOUNT}"
 gcloud config set project "${GOOGLE_PROJECT}"
 
+# authenticates docker
+gcloud auth configure-docker "eu.gcr.io" -q
+
 # optionally sets the region and zone if provided
 if [ "${GOOGLE_REGION}" ]; then
     gcloud config set compute/region "$GOOGLE_REGION"

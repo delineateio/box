@@ -30,6 +30,12 @@
        dest: ~/.scripts/
      become_user: vagrant
 
+   - name: Create pip directory
+     file:
+       path: ~/.pip
+       state: directory
+     become_user: vagrant
+
    - name: Add bootstrap files # add files
      copy:
       src: '{{ item.src }}'
@@ -37,6 +43,7 @@
      with_items:
       - { name: colours, src: ./config/colours, dest: ~/.colours }
       - { name: nano, src: ./config/nanorc, dest: ~/.nanorc }
+      - { name: pip, src: ./config/pip.conf, dest: ~/.pip/pip.conf }
       - { name: pre-commit, src: ./config/pre-commit-config.yaml, dest: ~/.pre-commit-config.yaml }
       - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile }
       - { name: title, src: ./config/title, dest: ~/.title }
@@ -90,6 +97,7 @@
       - { name: nodejs, repo: 'deb https://deb.nodesource.com/node_10.x bionic main' }
       - { name: nodejs, repo: 'deb-src https://deb.nodesource.com/node_10.x bionic main' }
       - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
+      - { name: pack, repo: 'ppa:cncf-buildpacks/pack-cli' }
       - { name: python, repo: 'ppa:deadsnakes/ppa' }
       - { name: ruby, repo: 'ppa:brightbox/ruby-ng' }
      loop_control:
@@ -128,6 +136,7 @@
        - nmon=16g+debian-3
        - nodejs=10.23.1-1nodesource1
        - osquery=4.5.1-1.linux
+       - pack-cli=0.16.0-0ubuntu1~bionic
        - pinentry-curses=1.1.0-1
        - pinentry-gtk2=1.1.0-1
        - pkg-config=0.29.1-0ubuntu2
@@ -137,6 +146,7 @@
        - rng-tools=5-0ubuntu4
        - ruby2.6-dev=2.6.6-1bbox1~bionic1
        - ruby2.6=2.6.6-1bbox1~bionic1
+       - screen=4.6.2-1ubuntu1
        - shellcheck=0.4.6-1
        - tree=1.7.0-5
        - unzip=6.0-21ubuntu1.1
@@ -170,8 +180,9 @@
       global: yes
      with_items:
       - { name: express, version: 4.17.1 }
-      - { name: snyk, version: 1.437.3 }
       - { name: serverless, version: 2.18.0 }
+      - { name: snyk, version: 1.437.3 }
+      - { name: stts, version: 1.2.2 }
      loop_control:
       label: '{{ item.name }}'
 

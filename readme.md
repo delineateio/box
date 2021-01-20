@@ -140,6 +140,7 @@ The following tools and languages are automatically installed using `ansible` as
 * [circleci](https://github.com/CircleCI-Public/circleci-cli) - CLI for working with [CircleCI](https://circleci.com/)
 * [gh](https://cli.github.com/) - Work with issues, pull requests, checks, releases from the terminal
 * [pre-commit](https://pre-commit.com/) - A framework for managing and maintaining multi-language pre-commit hooks
+* [screen](https://www.gnu.org/software/screen/manual/screen.html) - full-screen window manager that multiplexes a physical terminal between several processes
 * [shellcheck](https://github.com/koalaman/shellcheck) - Shell script static analysis tool for instant feedback
 
 ### Security Tools
@@ -154,12 +155,14 @@ The following tools and languages are automatically installed using `ansible` as
 * [hey](https://github.com/rakyll/hey) - HTTP load testing with concurrency level and printing stats
 * [httpie](https://httpie.io/) - User-friendly command line HTTP client for the API era
 * [jq](https://stedolan.github.io/jq/) - Slice, filter, map and transform JSON data
+* [stts](https://www.npmjs.com/package/stts) - Quick, completely offline reference for HTTP status codes
 
 ### Serverless, Containers & k8s
 
 * [docker](https://www.docker.com/) - Solution for defining and using containers
 * [kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/) - Controls the Kubernetes cluster manager
 * [octant](https://octant.dev/) - Developer-centric web interface for Kubernetes
+* [pack](https://buildpacks.io) - transform application source code into images that can run on any cloud
 * [serverless](https://www.serverless.com/) - Zero-friction serverless development to easily build apps that auto-scale on low cost, next-gen cloud infrastructure
 * [skaffold](https://skaffold.dev/) - Workflow for building, pushing and deploying your k8s applications
 * [st](https://github.com/GoogleContainerTools/container-structure-test) - Powerful framework to validate the structure of a container images
