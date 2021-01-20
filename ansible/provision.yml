@@ -66,7 +66,6 @@
         with_items:
           - { name: docker, url: 'https://download.docker.com/linux/ubuntu/gpg'  }
           - { name: gcloud, url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'}
-          - { name: nodejs, url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key' }
         loop_control:
           label: '{{ item.name }}'
       - name: Add keys directly
@@ -87,8 +86,6 @@
       - { name: docker, repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable' }
       - { name: gcloud, repo: 'deb https://packages.cloud.google.com/apt cloud-sdk main' }
       - { name: github, repo: 'deb https://cli.github.com/packages bionic main' }
-      - { name: nodejs, repo: 'deb https://deb.nodesource.com/node_10.x bionic main' }
-      - { name: nodejs, repo: 'deb-src https://deb.nodesource.com/node_10.x bionic main' }
       - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
       - { name: ruby, repo: 'ppa:brightbox/ruby-ng' }
      loop_control:
@@ -118,14 +115,13 @@
        - httpie=0.9.8-2
        - iotop=0.6-2
        - jq=1.5+dfsg-2
-       - kubectl=1.20.1-00
+       - kubectl
        - lolcat=42.0.99-1
        - mtr=0.92-1
        - neofetch=3.4.0-1
        - nginx=1.14.0-0ubuntu1.7
        - nmap=7.60-1ubuntu5
        - nmon=16g+debian-3
-       - nodejs=10.23.1-1nodesource1
        - osquery=4.5.1-1.linux
        - pinentry-curses=1.1.0-1
        - pinentry-gtk2=1.1.0-1
@@ -161,6 +157,31 @@
       autoclean: yes
 
 # installs (other) ---------------------------------------------------
+   - name: Install tfenv and terraform
+     shell:
+       cmd: |
+         mkdir -p ~/.local/bin
+         git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+         ln -s ~/.tfenv/bin/* ~/.local/bin
+         ~/.local/bin/tfenv install latest
+         ~/.local/bin/tfenv use latest
+       warn: false
+       creates: ~/.local/bin/tfenv
+     become_user: vagrant
+
+   - name: Install nvm and node
+     shell:
+       cmd: |
+         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
+         . ~/.nvm/nvm.sh
+         nvm install v10
+         nvm alias default v10
+         nvm which v10
+       warn: false
+       executable: /bin/bash
+       creates: ~/.nvm/nvm.sh
+     become_user: vagrant
+     register: nvm
 
    - name: Install npm packages
      npm:
@@ -174,6 +195,8 @@
       - { name: serverless, version: 2.18.0 }
      loop_control:
       label: '{{ item.name }}'
+     environment:
+       PATH: '{{ nvm.stdout_lines[-1] | regex_replace("node$", "") }}:{{ lookup("env", "PATH") }}'
 
    - name: Install pip packages
      pip:
@@ -193,7 +216,6 @@
           - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
           - { name: golang, src: 'https://golang.org/dl/go1.15.6.linux-amd64.tar.gz', dest: /, creates: /go/bin }
           - { name: packer, src: 'https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
-          - { name: terraform, src: 'https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/terraform}
         loop_control:
           label: '{{ item.name }}'
 

@@ -20,6 +20,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "ansible_local" do |ansible|
     ansible.version           = "2.9.16"
+    ansible.install_mode      = "pip"
     ansible.provisioning_path = "/ansible"
     ansible.playbook          = "provision.yml"
     ansible.verbose           = false
