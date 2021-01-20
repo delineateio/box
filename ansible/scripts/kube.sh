@@ -29,7 +29,6 @@ if [ ${ERROR_CODE:-0} -eq 0 ]; then
   gcloud container clusters get-credentials "${GOOGLE_CLUSTER_NAME}" -q
   kubectl config rename-context "$(kubectl config current-context)" dev
   kubectl config use-context dev
-  gcloud auth configure-docker "eu.gcr.io" -q
 else
   echo "The cluster '${GOOGLE_CLUSTER_NAME}' was not found"
 fi
