@@ -207,16 +207,10 @@
        - nvm which default
        register: nvm
 
-     - name: nvm variable debug
-       debug: var=nvm
-
      - name: Get node/npm path from nvm
        shell: dirname '{{ nvm.results[-1].stdout }}'
        register: nvm_path
 
-     - name: nvm_path debug
-       debug: var=nvm_path
-       
      become_user: vagrant
 
    - name: Install npm packages
