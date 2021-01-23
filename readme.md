@@ -114,6 +114,8 @@ export GOOGLE_ZONE="europe-west2-a" # gcp
 export GOOGLE_CLUSTER_NAME=app-cluster # gke cluster name
 export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authenticates to Snyk CLI
 export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
+export TERRAFORM_VERSION="latest" # install a specific version of Terraform
+export NODEJS_VERSION="--lts" # install a specific version of Node.js
 ```
 
 ### Copying Files to VM using Ansible

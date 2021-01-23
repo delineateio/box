@@ -108,14 +108,14 @@
        - docker-ce=5:20.10.1~3-0~ubuntu-bionic
        - figlet=2.2.5-3
        - fonts-firacode=1.204-2
-       - gh=1.4.0
+       - gh=1.5.0
        - gnupg2=2.2.4-1ubuntu1.3
        - google-cloud-sdk-skaffold=321.0.0-0
        - google-cloud-sdk=321.0.0-0
        - httpie=0.9.8-2
        - iotop=0.6-2
        - jq=1.5+dfsg-2
-       - kubectl
+       - kubectl=1.20.2-00
        - lolcat=42.0.99-1
        - mtr=0.92-1
        - neofetch=3.4.0-1
@@ -157,31 +157,63 @@
       autoclean: yes
 
 # installs (other) ---------------------------------------------------
-   - name: Install tfenv and terraform
-     shell:
-       cmd: |
-         mkdir -p ~/.local/bin
-         git clone https://github.com/tfutils/tfenv.git ~/.tfenv
-         ln -s ~/.tfenv/bin/* ~/.local/bin
-         ~/.local/bin/tfenv install latest
-         ~/.local/bin/tfenv use latest
-       warn: false
-       creates: ~/.local/bin/tfenv
+   - name: Install tfenv
+     block:
+     - name: Check if .local/bin directory exist
+       stat:
+         path: ~/.local/bin
+       register: local_bin
+
+     - name: Create .local/bin directory
+       file:
+         path: ~/.local/bin
+         state: directory
+       when: local_bin.stat.exists == false
+
+     - name: Clone tfenv repository
+       git:
+         repo: https://github.com/tfutils/tfenv.git
+         dest: ~/.tfenv
+
+     - name: Create symbolic links to tfenv scripts
+       file:
+         src: ~/.tfenv/bin/{{ item }}
+         path: ~/.local/bin/{{ item }}
+         state: link
+       loop:
+       - tfenv
+       - terraform
+
      become_user: vagrant
 
    - name: Install nvm and node
-     shell:
-       cmd: |
-         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
-         . ~/.nvm/nvm.sh
-         nvm install v10
-         nvm alias default v10
-         nvm which v10
-       warn: false
-       executable: /bin/bash
-       creates: ~/.nvm/nvm.sh
+     block:
+     - name: Clone nvm repository
+       git:
+         repo: https://github.com/nvm-sh/nvm.git
+         dest: ~/.nvm
+         version: v0.37.2
+
+     - name: Install Node.js v10
+       shell:
+         cmd: 'source ~/.nvm/nvm.sh && {{ item }}'
+         executable: /bin/bash
+       loop:
+       - nvm install --no-progress --default v10
+       - nvm which default
+       register: nvm
+
+     - name: nvm variable debug
+       debug: var=nvm
+
+     - name: Get node/npm path from nvm
+       shell: dirname '{{ nvm.results[-1].stdout }}'
+       register: nvm_path
+
+     - name: nvm_path debug
+       debug: var=nvm_path
+       
      become_user: vagrant
-     register: nvm
 
    - name: Install npm packages
      npm:
@@ -196,7 +228,7 @@
      loop_control:
       label: '{{ item.name }}'
      environment:
-       PATH: '{{ nvm.stdout_lines[-1] | regex_replace("node$", "") }}:{{ lookup("env", "PATH") }}'
+       PATH: '{{ nvm_path.stdout }}:{{ lookup("env", "PATH") }}'
 
    - name: Install pip packages
      pip:

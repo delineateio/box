@@ -14,11 +14,14 @@ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.gcloud.json
 export CIRCLECI_CLI_HOST=https://circleci.com
 export BAT_CONFIG_PATH="$HOME/.config/bat.conf"
 export GPG_TTY="$(tty)"
+export NVM_DIR=$HOME/.nvm
 # <!-- env END -->
 
 # <!-- source BEGIN -->
 source "$HOME/.env"
 source "$HOME/.cargo/env"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
 # <!-- source END -->
 
 # <!-- eval BEGIN -->
