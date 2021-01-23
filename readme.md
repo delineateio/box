@@ -114,6 +114,7 @@ export GOOGLE_ZONE="europe-west2-a" # gcp
 export GOOGLE_CLUSTER_NAME=app-cluster # gke cluster name
 export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authenticates to Snyk CLI
 export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
+export GO_VERSION=go1.15.7 # Installs (if required) and switches to use go 1.15.7
 ```
 
 ### Copying Files to VM
@@ -194,6 +195,7 @@ The following tools and languages are automatically installed using `ansible` as
 
 * [clojure](https://clojure.org/) - Robust, practical, and fast programming language with a set of useful features
 * [go](https://golang.org/) - Language that makes it easy to build simple, reliable, and efficient software
+* [gvm](https://github.com/moovweb/gvm) - gvm provides an interface to manage Go versions.
 * [node](https://nodejs.org/en/) - As an asynchronous event-driven JavaScript runtime designed to build scalable network applications
 * [ruby](https://www.ruby-lang.org/en/) - A dynamic programming language with a focus on simplicity and productivity
 * [rust](https://www.rust-lang.org/) - Language empowering everyone to build reliable and efficient software

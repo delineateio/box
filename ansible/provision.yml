@@ -106,6 +106,7 @@
      apt:
       pkg:
        - apt-transport-https=1.6.12ubuntu0.2
+       - bison=2:3.0.4.dfsg-1build1
        - build-essential=12.4ubuntu1
        - gcc=4:7.4.0-1ubuntu2.3
        - containerd.io=1.4.3-1
@@ -226,6 +227,7 @@
           - { name: clojure, cmd: 'curl -fLSs https://download.clojure.org/install/linux-install-1.10.1.763.sh | bash', creates: /usr/local/bin/clj }
           - { name: circleci, cmd: 'curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | VERSION=0.1.11540 bash', creates: /usr/local/bin/circleci}
           - { name: golangci, cmd: 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.33.0', creates: /usr/local/bin/golangci-lint}
+          - { name: gvm, cmd: 'curl -fLSs https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash', creates: /home/vagrant/.gvm/bin/gvm}
           - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v 4.24.8 -P inspec', creates: /usr/bin/inspec }
         loop_control:
           label: '{{ item.name }}'

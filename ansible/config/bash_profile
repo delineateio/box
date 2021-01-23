@@ -19,6 +19,7 @@ export GPG_TTY="$(tty)"
 # <!-- source BEGIN -->
 source "$HOME/.env"
 source "$HOME/.cargo/env"
+source "$HOME/.gvm/scripts/gvm"
 # <!-- source END -->
 
 # <!-- eval BEGIN -->
