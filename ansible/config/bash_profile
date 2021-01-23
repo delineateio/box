@@ -1,7 +1,5 @@
 # <!-- alias BEGIN -->
 alias clear="clear && figlet $(cat .title) | lolcat --seed 18" # overrides clear
-alias home="cd ~/ && clear" # overrides clear
-alias profile="bat ~/.bash_profile" # overrides clear
 # <!-- alias END -->
 
 # <!-- path BEGIN -->

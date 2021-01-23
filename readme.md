@@ -201,21 +201,6 @@ The following tools and languages are automatically installed using `ansible` as
 * [rust](https://www.rust-lang.org/) - Language empowering everyone to build reliable and efficient software
 * [scala](https://www.scala-lang.org/) - Object-oriented and functional programming in one concise, high-level language
 
-### Convenience Shell Aliases
-
-#### Profile Shell Alias
-
-Using `profile` will display the current contents of `$HOME/.bash_profile` using `bat`.
-![profile](./assets/profile.png)
-
-#### Clear Shell Alias
-
-Overrides the standard command and writes out some header information.  By using the `clear` command the following screen will be displayed.
-
-#### Home Shell Alias
-
-Changes the working directory to `$HOME` and runs `clear`.  Ultimate the view is the same as clear but the `pwd` will be be `$HOME`.
-
 ## Key Configurations
 
 ### Starship
@@ -235,9 +220,7 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-### GitHub & Git
-
-#### GitHub Authentication
+### GitHub Authentication
 
 The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.
 
@@ -245,7 +228,7 @@ There should be no need to manually edit any `git` configuration before being ab
 
 ![vagrant manager](./assets/github.png)
 
-#### Git Aliases
+### Git Aliases
 
 A number of convenient `git` aliases are provided:
 
@@ -254,7 +237,7 @@ A number of convenient `git` aliases are provided:
 * `git pretty` provides a concise log of the commits
 * `git root` shows the absolute path of the projects root directory
 
-#### GPG Commit Signing
+### GPG Commit Signing
 
 `git` is pre-configured by default to use `gpg` signing so commits are verified.  To learn more read the `github` documentation on [signing commits](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits).  At present the `gpg` key found at `$HOME/gpg_public` needs to be manually added to `github`.
 
