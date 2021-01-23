@@ -118,23 +118,14 @@ export TERRAFORM_VERSION="latest" # install a specific version of Terraform
 export NODEJS_VERSION="--lts" # install a specific version of Node.js
 ```
 
-### Copying Files to VM using Ansible
+### Copying Files to VM
 
-The following snippet can be used in an Ansible playbook to configure the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` or able to `git push` to a remote repository.
+The following snippet can be used in an project Vagrantfile to copy the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` nor able to `git push` to a remote repository.
 
-```yml
-   - name: Add files
-     copy:
-      src: '{{ item.src }}'
-      dest: '{{ item.dest }}'
-     with_items:
-      - { name: gcloud.json, src: ~/.gcloud/delineateio/platform/dev/key.json, dest: ~/.gcloud.json }
-      - { name: id_rsa, src: ~/.ssh/id_rsa, dest: ~/.ssh/id_rsa }
-      - { name: id_rsa.pub, src: ~/.ssh/id_rsa.pub, dest: ~/.ssh/id_rsa.pub }
-      - { name: .env, src: ./.env, dest: ~/.env }
-     loop_control:
-      label: '{{ item.name }}'
-     become_user: vagrant
+```ruby
+config.vm.provision "file", source: "~/.gcloud.json", destination: "~/.gcloud.json"
+config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "~/.ssh/id_rsa"
+config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/id_rsa.pub"
 ```
 
 > It is also possible to also use Vagrant file provisioners to copy the `~/.gcloud.json`, `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files into the VM if preferred.  Read more details about file provisioners [here](https://www.vagrantup.com/docs/provisioning/file)
@@ -151,6 +142,7 @@ The following tools and languages are automatically installed using `ansible` as
 * [circleci](https://github.com/CircleCI-Public/circleci-cli) - CLI for working with [CircleCI](https://circleci.com/)
 * [gh](https://cli.github.com/) - Work with issues, pull requests, checks, releases from the terminal
 * [pre-commit](https://pre-commit.com/) - A framework for managing and maintaining multi-language pre-commit hooks
+* [screen](https://www.gnu.org/software/screen/manual/screen.html) - full-screen window manager that multiplexes a physical terminal between several processes
 * [shellcheck](https://github.com/koalaman/shellcheck) - Shell script static analysis tool for instant feedback
 
 ### Security Tools
@@ -165,12 +157,14 @@ The following tools and languages are automatically installed using `ansible` as
 * [hey](https://github.com/rakyll/hey) - HTTP load testing with concurrency level and printing stats
 * [httpie](https://httpie.io/) - User-friendly command line HTTP client for the API era
 * [jq](https://stedolan.github.io/jq/) - Slice, filter, map and transform JSON data
+* [stts](https://www.npmjs.com/package/stts) - Quick, completely offline reference for HTTP status codes
 
 ### Serverless, Containers & k8s
 
 * [docker](https://www.docker.com/) - Solution for defining and using containers
 * [kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/) - Controls the Kubernetes cluster manager
 * [octant](https://octant.dev/) - Developer-centric web interface for Kubernetes
+* [pack](https://buildpacks.io) - transform application source code into images that can run on any cloud
 * [serverless](https://www.serverless.com/) - Zero-friction serverless development to easily build apps that auto-scale on low cost, next-gen cloud infrastructure
 * [skaffold](https://skaffold.dev/) - Workflow for building, pushing and deploying your k8s applications
 * [st](https://github.com/GoogleContainerTools/container-structure-test) - Powerful framework to validate the structure of a container images

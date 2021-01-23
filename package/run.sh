@@ -18,7 +18,7 @@ BOX=${BOX_DIR}/box-${BOX_PROVIDER}.box
 
 # ensures that box is fresh
 vagrant destroy -f
-BOX_BUILD=true vagrant up --provider virtualbox
+PACKAGING=true vagrant up --provider virtualbox
 
 # packages the box ready for publishing
 mkdir -p "${BOX_DIR}"

@@ -14,10 +14,13 @@ exec &>> "${HOME}/.box.log"
 
 if [ ! -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]; then
     # ensures that if key file not present resets state
+    echo "No service account was found at '$GOOGLE_APPLICATION_CREDENTIALS'"
     gcloud config unset compute/region
     gcloud config unset compute/zone
-    gcloud auth revoke
-    echo "No service account was found at '$GOOGLE_APPLICATION_CREDENTIALS'"
+    if [ "$(gcloud config get-value account -q)" ]; then
+        gcloud auth revoke
+    fi
+
     exit 0
 fi
 
@@ -33,6 +36,9 @@ gcloud auth activate-service-account \
 # updates the gcloud
 gcloud config set account "${GOOGLE_SERVICE_ACCOUNT}"
 gcloud config set project "${GOOGLE_PROJECT}"
+
+# authenticates docker
+gcloud auth configure-docker "eu.gcr.io" -q
 
 # optionally sets the region and zone if provided
 if [ "${GOOGLE_REGION}" ]; then
