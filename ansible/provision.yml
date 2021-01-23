@@ -38,7 +38,6 @@
       - { name: colours, src: ./config/colours, dest: ~/.colours }
       - { name: nano, src: ./config/nanorc, dest: ~/.nanorc }
       - { name: pip, src: ./config/pip.conf, dest: ~/.pip/pip.conf }
-      - { name: pre-commit, src: ./config/pre-commit-config.yaml, dest: ~/.pre-commit-config.yaml }
       - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile }
       - { name: title, src: ./config/title, dest: ~/.title }
      loop_control:
@@ -375,3 +374,25 @@
           enabled: yes
           state: started
           daemon_reload: yes
+
+
+# project ------------------------------------------------------------
+
+   - block: # project
+      - name: Add Project
+        git:
+          repo: https://github.com/delineateio/project.git
+          dest: ~/project
+      - name: Recursively remove directory
+        file:
+          path: /home/vagrant/project/.git
+          state: absent
+      - name: Init Git
+        command: git init
+        args:
+          chdir: /home/vagrant/project
+      - name: Install pre-commit
+        command: pre-commit install
+        args:
+          chdir: /home/vagrant/project
+     become_user: vagrant
