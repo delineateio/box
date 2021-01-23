@@ -8,7 +8,7 @@
 	gpgsign=true
 [core]
 	editor = nano
-	excludesfile = ~/.gitignore_global
+	excludesfile = ~/.gitignore
 	pager = cat
 [gpg]
 	program=gpg2

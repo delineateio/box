@@ -24,12 +24,6 @@
        access_time: preserve
      become_user: vagrant
 
-   - name: Add scripts
-     copy:
-       src: ./scripts/
-       dest: ~/.scripts/
-     become_user: vagrant
-
    - name: Create pip directory
      file:
        path: ~/.pip
@@ -127,7 +121,7 @@
        - httpie=0.9.8-2
        - iotop=0.6-2
        - jq=1.5+dfsg-2
-       - kubectl=1.20.1-00
+       - kubectl=1.20.2-00
        - lolcat=42.0.99-1
        - mtr=0.92-1
        - neofetch=3.4.0-1
@@ -268,7 +262,7 @@
           dest: '{{ item.dest }}'
         with_items:
           - { name: gitconfig, src: ./config/gitconfig, dest: ~/.gitconfig }
-          - { name: gitignore, src: ./config/gitignore_global, dest: ~/.gitignore_global }
+          - { name: gitignore, src: ./config/gitignore, dest: ~/.gitignore }
           - { name: gitmessage, src: ./config/gitmessage, dest: ~/.gitmessage }
         loop_control:
           label: '{{ item.name }}'
