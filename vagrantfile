@@ -17,7 +17,6 @@ Vagrant.configure("2") do |config|
   # mounts ansible scripts only
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.synced_folder "./ansible", "/ansible"
-  config.vm.synced_folder "./ansible/scripts", "/home/vagrant/.scripts"
 
   # if packaging the box copies files otherwises syncs for better dev experience
   if packaging == 'true'
@@ -27,8 +26,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.provision "ansible_local" do |ansible|
-    ansible.version           = "2.9.16"
-    ansible.install_mode      = "pip"
+    ansible.version           = "2.9.17"
     ansible.provisioning_path = "/ansible"
     ansible.playbook          = "provision.yml"
     ansible.verbose           = false

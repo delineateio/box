@@ -4,7 +4,7 @@
   gather_facts: false
   hosts: all
   vars:
-    ansible_python_interpreter: /usr/bin/python3
+    ansible_python_interpreter: /usr/bin/python3.6
   become: true
   tasks:
 
@@ -114,7 +114,7 @@
        - docker-ce=5:20.10.2~3-0~ubuntu-bionic
        - figlet=2.2.5-3
        - fonts-firacode=1.204-2
-       - gh=1.4.0
+       - gh=1.5.0
        - gnupg2=2.2.4-1ubuntu1.3
        - google-cloud-sdk-skaffold=323.0.0-0
        - google-cloud-sdk=323.0.0-0
@@ -260,10 +260,11 @@
         copy:
           src: '{{ item.src }}'
           dest: '{{ item.dest }}'
+          force: '{{ item.force }}'
         with_items:
-          - { name: gitconfig, src: ./config/gitconfig, dest: ~/.gitconfig }
-          - { name: gitignore, src: ./config/gitignore, dest: ~/.gitignore }
-          - { name: gitmessage, src: ./config/gitmessage, dest: ~/.gitmessage }
+          - { name: gitconfig, src: ./config/gitconfig, dest: ~/.gitconfig, force: no }
+          - { name: gitignore, src: ./config/gitignore, dest: ~/.gitignore, force: yes }
+          - { name: gitmessage, src: ./config/gitmessage, dest: ~/.gitmessage, force: yes }
         loop_control:
           label: '{{ item.name }}'
      become_user: vagrant
