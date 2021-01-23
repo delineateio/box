@@ -2,12 +2,12 @@ Vagrant.require_version ">=2.2.14"
 
 Vagrant.configure("2") do |config|
 
-  box_build = ENV["BOX_BUILD"]
+  packaging = ENV["PACKAGING"]
 
   # Better maintained than alternative boxes
   config.vm.hostname    = "box"
   config.vm.box         = "ubuntu/bionic64"
-  config.vm.box_version = "20201211.1.0"
+  config.vm.box_version = "20210119.1.0"
 
   config.vm.provider "virtualbox" do |virtualbox|
     virtualbox.memory = 4096
@@ -17,20 +17,29 @@ Vagrant.configure("2") do |config|
   # mounts ansible scripts only
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.synced_folder "./ansible", "/ansible"
+  config.vm.synced_folder "./ansible/scripts", "/home/vagrant/.scripts"
+
+  # if packaging the box copies files otherwises syncs for better dev experience
+  if packaging == 'true'
+    config.vm.provision "file", source: "./ansible/scripts", destination: "$HOME/.scripts"
+  else
+    config.vm.synced_folder "./ansible/scripts", "/home/vagrant/.scripts"
+  end
 
   config.vm.provision "ansible_local" do |ansible|
     ansible.version           = "2.9.16"
+    ansible.install_mode      = "pip"
     ansible.provisioning_path = "/ansible"
     ansible.playbook          = "provision.yml"
     ansible.verbose           = false
   end
 
-  if box_build == 'true'
-    # scrips modified from Chef bento project
+  # if packaging runs modified scripts from Chef bento project to minimise size
+  if packaging == 'true'
     config.vm.provision "shell", path: "./package/cleanup.sh", :privileged => true
     config.vm.provision "shell", path: "./package/minimize.sh", :privileged => true
   end
 
-  config.vm.post_up_message = "For are now ready to develop for https://www.delineate.io"
+  config.vm.post_up_message = "You are now ready to develop for https://www.delineate.io"
 
 end
