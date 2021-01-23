@@ -21,7 +21,7 @@ The `box` is deliberately opinionated.  When an `ssh` session is established ...
 * A `gpg` key is created and configured as the signing key for `git` so commits can be verified
 * If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically authenticated and configured
 * If a GKE cluster name is provided then `kubectl` is automatically authenticated and configured
-* An empty project is created if it does not exist pre-configured with `pre-commit` and `detect-secrets`
+* An empty project is cloned from a GitHub template repo
 
 > More detail is provided below on how this initialisation can be configured by projects
 
