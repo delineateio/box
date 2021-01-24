@@ -66,7 +66,6 @@
         with_items:
           - { name: docker, url: 'https://download.docker.com/linux/ubuntu/gpg'  }
           - { name: gcloud, url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'}
-          - { name: nodejs, url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key' }
         loop_control:
           label: '{{ item.name }}'
       - name: Add keys directly
@@ -87,8 +86,6 @@
       - { name: docker, repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable' }
       - { name: gcloud, repo: 'deb https://packages.cloud.google.com/apt cloud-sdk main' }
       - { name: github, repo: 'deb https://cli.github.com/packages bionic main' }
-      - { name: nodejs, repo: 'deb https://deb.nodesource.com/node_10.x bionic main' }
-      - { name: nodejs, repo: 'deb-src https://deb.nodesource.com/node_10.x bionic main' }
       - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
       - { name: pack, repo: 'ppa:cncf-buildpacks/pack-cli' }
       - { name: python, repo: 'ppa:deadsnakes/ppa' }
@@ -139,7 +136,6 @@
        - nginx=1.14.0-0ubuntu1.7
        - nmap=7.60-1ubuntu5
        - nmon=16g+debian-3
-       - nodejs=10.23.1-1nodesource1
        - osquery=4.5.1-1.linux
        - pack-cli=0.16.0-0ubuntu1~bionic
        - pinentry-curses=1.1.0-1
@@ -179,6 +175,57 @@
       autoclean: yes
 
 # installs (other) ---------------------------------------------------
+   - name: Install tfenv
+     block:
+     - name: Check if .local/bin directory exist
+       stat:
+         path: ~/.local/bin
+       register: local_bin
+
+     - name: Create .local/bin directory
+       file:
+         path: ~/.local/bin
+         state: directory
+       when: local_bin.stat.exists == false
+
+     - name: Clone tfenv repository
+       git:
+         repo: https://github.com/tfutils/tfenv.git
+         dest: ~/.tfenv
+
+     - name: Create symbolic links to tfenv scripts
+       file:
+         src: ~/.tfenv/bin/{{ item }}
+         path: ~/.local/bin/{{ item }}
+         state: link
+       loop:
+       - tfenv
+       - terraform
+
+     become_user: vagrant
+
+   - name: Install nvm and node
+     block:
+     - name: Clone nvm repository
+       git:
+         repo: https://github.com/nvm-sh/nvm.git
+         dest: ~/.nvm
+         version: v0.37.2
+
+     - name: Install Node.js v10
+       shell:
+         cmd: 'source ~/.nvm/nvm.sh && {{ item }}'
+         executable: /bin/bash
+       loop:
+       - nvm install --no-progress --default v10
+       - nvm which default
+       register: nvm
+
+     - name: Get node/npm path from nvm
+       shell: dirname '{{ nvm.results[-1].stdout }}'
+       register: nvm_path
+
+     become_user: vagrant
 
    - name: Install npm packages
      npm:
@@ -193,6 +240,8 @@
       - { name: stts, version: 1.2.2 }
      loop_control:
       label: '{{ item.name }}'
+     environment:
+       PATH: '{{ nvm_path.stdout }}:{{ lookup("env", "PATH") }}'
 
    - name: Install pip packages
      pip:
@@ -212,7 +261,6 @@
           - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
           - { name: golang, src: 'https://golang.org/dl/go1.15.6.linux-amd64.tar.gz', dest: /, creates: /go/bin }
           - { name: packer, src: 'https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
-          - { name: terraform, src: 'https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/terraform}
         loop_control:
           label: '{{ item.name }}'
 
