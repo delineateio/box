@@ -17,10 +17,10 @@ SCRIPTS="${HOME}/.scripts"
 rm -rf "${HOME}.box.log"
 
 # executes the required scripts
-bash "${SCRIPTS}/project.sh"
 bash "${SCRIPTS}/gh.sh"
 bash "${SCRIPTS}/gpg.sh"
 bash "${SCRIPTS}/git.sh"
+bash "${SCRIPTS}/go.sh"
 bash "${SCRIPTS}/gcloud.sh"
 bash "${SCRIPTS}/kube.sh"
 bash "${SCRIPTS}/python.sh"

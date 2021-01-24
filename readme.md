@@ -21,7 +21,7 @@ The `box` is deliberately opinionated.  When an `ssh` session is established ...
 * A `gpg` key is created and configured as the signing key for `git` so commits can be verified
 * If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically authenticated and configured
 * If a GKE cluster name is provided then `kubectl` is automatically authenticated and configured
-* An empty project is created if it does not exist pre-configured with `pre-commit` and `detect-secrets`
+* An empty project is cloned from a GitHub template repo
 
 > More detail is provided below on how this initialisation can be configured by projects
 
@@ -116,6 +116,7 @@ export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authentic
 export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
 export TERRAFORM_VERSION="latest" # install a specific version of Terraform
 export NODEJS_VERSION="--lts" # install a specific version of Node.js
+export GO_VERSION=go1.15.7 # Installs (if required) and switches to use go 1.15.7
 ```
 
 ### Copying Files to VM
@@ -196,25 +197,11 @@ The following tools and languages are automatically installed using `ansible` as
 
 * [clojure](https://clojure.org/) - Robust, practical, and fast programming language with a set of useful features
 * [go](https://golang.org/) - Language that makes it easy to build simple, reliable, and efficient software
+* [gvm](https://github.com/moovweb/gvm) - gvm provides an interface to manage Go versions.
 * [node](https://nodejs.org/en/) - As an asynchronous event-driven JavaScript runtime designed to build scalable network applications
 * [ruby](https://www.ruby-lang.org/en/) - A dynamic programming language with a focus on simplicity and productivity
 * [rust](https://www.rust-lang.org/) - Language empowering everyone to build reliable and efficient software
 * [scala](https://www.scala-lang.org/) - Object-oriented and functional programming in one concise, high-level language
-
-### Convenience Shell Aliases
-
-#### Profile Shell Alias
-
-Using `profile` will display the current contents of `$HOME/.bash_profile` using `bat`.
-![profile](./assets/profile.png)
-
-#### Clear Shell Alias
-
-Overrides the standard command and writes out some header information.  By using the `clear` command the following screen will be displayed.
-
-#### Home Shell Alias
-
-Changes the working directory to `$HOME` and runs `clear`.  Ultimate the view is the same as clear but the `pwd` will be be `$HOME`.
 
 ## Key Configurations
 
@@ -235,9 +222,7 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-### GitHub & Git
-
-#### GitHub Authentication
+### GitHub Authentication
 
 The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.
 
@@ -245,7 +230,7 @@ There should be no need to manually edit any `git` configuration before being ab
 
 ![vagrant manager](./assets/github.png)
 
-#### Git Aliases
+### Git Aliases
 
 A number of convenient `git` aliases are provided:
 
@@ -254,7 +239,7 @@ A number of convenient `git` aliases are provided:
 * `git pretty` provides a concise log of the commits
 * `git root` shows the absolute path of the projects root directory
 
-#### GPG Commit Signing
+### GPG Commit Signing
 
 `git` is pre-configured by default to use `gpg` signing so commits are verified.  To learn more read the `github` documentation on [signing commits](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits).  At present the `gpg` key found at `$HOME/gpg_public` needs to be manually added to `github`.
 
