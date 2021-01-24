@@ -10,11 +10,13 @@
 
 set -e
 
+exec &>> "${HOME}/.box.log"
+
 # shellcheck source=/dev/null
 [[ -s "$GVM_ROOT/scripts/gvm" ]] && source "$GVM_ROOT/scripts/gvm"
 
 # exists if
-if [ "${GO_VERSION}" ]; then
+if [ -n "${GO_VERSION}" ]; then
   gvm install "${GO_VERSION}"
   gvm use "${GO_VERSION}" --default
 fi
