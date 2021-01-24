@@ -115,6 +115,7 @@ export GOOGLE_CLUSTER_NAME=app-cluster # gke cluster name
 export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authenticates to Snyk CLI
 export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
 export GO_VERSION=go1.15.7 # Installs (if required) and switches to use go 1.15.7
+export PYTHON_VERSION=3.9.1 # Installs (if required) and switches to use python 3.9.1
 ```
 
 ### Copying Files to VM

@@ -34,8 +34,8 @@
      copy:
       src: '{{ item.src }}'
       dest: '{{ item.dest }}'
+      force: no
      with_items:
-      - { name: colours, src: ./config/colours, dest: ~/.colours }
       - { name: nano, src: ./config/nanorc, dest: ~/.nanorc }
       - { name: pip, src: ./config/pip.conf, dest: ~/.pip/pip.conf }
       - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile }
@@ -107,13 +107,14 @@
        - apt-transport-https=1.6.12ubuntu0.2
        - bison=2:3.0.4.dfsg-1build1
        - build-essential=12.4ubuntu1
-       - gcc=4:7.4.0-1ubuntu2.3
+       - build-essential=12.4ubuntu1
        - containerd.io=1.4.3-1
        - default-jre=2:1.11-68ubuntu1~18.04.1
        - docker-ce-cli=5:20.10.2~3-0~ubuntu-bionic
        - docker-ce=5:20.10.2~3-0~ubuntu-bionic
        - figlet=2.2.5-3
        - fonts-firacode=1.204-2
+       - gcc=4:7.4.0-1ubuntu2.3
        - gh=1.5.0
        - gnupg2=2.2.4-1ubuntu1.3
        - google-cloud-sdk-skaffold=323.0.0-0
@@ -122,7 +123,17 @@
        - iotop=0.6-2
        - jq=1.5+dfsg-2
        - kubectl=1.20.2-00
+       - libbz2-dev=1.0.6-8.1ubuntu0.2
+       - libffi-dev=3.2.1-8
+       - liblzma-dev=5.2.2-1.3
+       - libncurses5-dev=6.1-1ubuntu1.18.04
+       - libreadline-dev=7.0-3
+       - libsqlite3-dev=3.22.0-1ubuntu0.4
+       - libssl-dev=1.1.1-1ubuntu2.1~18.04.7
+       - libxml2-dev=2.9.4+dfsg1-6.1ubuntu1.3
+       - llvm=1:6.0-41~exp5~ubuntu1
        - lolcat=42.0.99-1
+       - make=4.1-9.1ubuntu1
        - mtr=0.92-1
        - neofetch=3.4.0-1
        - nginx=1.14.0-0ubuntu1.7
@@ -142,9 +153,12 @@
        - ruby2.6=2.6.6-1bbox1~bionic1
        - screen=4.6.2-1ubuntu1
        - shellcheck=0.4.6-1
+       - tk-dev=8.6.0+9
        - tree=1.7.0-5
        - unzip=6.0-21ubuntu1.1
+       - xz-utils=5.2.2-1.3
        - zip=3.0-11build1
+       - zlib1g-dev=1:1.2.11.dfsg-0ubuntu2
       state: present
       install_recommends: no
 
@@ -226,17 +240,66 @@
           - { name: clojure, cmd: 'curl -fLSs https://download.clojure.org/install/linux-install-1.10.1.763.sh | bash', creates: /usr/local/bin/clj }
           - { name: circleci, cmd: 'curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | VERSION=0.1.11540 bash', creates: /usr/local/bin/circleci}
           - { name: golangci, cmd: 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.33.0', creates: /usr/local/bin/golangci-lint}
-          - { name: gvm, cmd: 'curl -fLSs https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash', creates: /home/vagrant/.gvm/bin/gvm}
           - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v 4.24.8 -P inspec', creates: /usr/bin/inspec }
         loop_control:
           label: '{{ item.name }}'
       - name: Shell installs (vagrant)
         shell:
-          cmd: curl https://sh.rustup.rs -sSf | sh -s -- -y
-          creates: ~/.cargo/bin/rustc
+          cmd: '{{ item.cmd }}'
+          creates: '{{ item.creates }}'
+        with_items:
+          - { name: gvm, cmd: 'curl -fLSs https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash', creates: /home/vagrant/.gvm/bin/gvm}
+          - { name: rust, cmd: 'curl https://sh.rustup.rs -sSf | sh -s -- -y', creates: ~/.cargo/bin/rustc }
+        loop_control:
+          label: '{{ item.name }}'
         args:
           warn: false
         become_user: vagrant
+
+# pyenv --------------------------------------------------------------
+
+   - block: # pyenv
+      - name: Clone pyenv
+        git:
+          repo: https://github.com/pyenv/pyenv.git
+          dest: ~/.pyenv
+      - name: Clone pyenv-virtualenv
+        git:
+          repo: https://github.com/pyenv/pyenv-virtualenv.git
+          dest: ~/.pyenv/plugins/pyenv-virtualenv
+      - name: Add pyenv variables
+        blockinfile:
+          path: ~/.bash_profile
+          insertafter: "# <!-- env END -->"
+          marker: "# <!-- pyenv env {mark} -->"
+          block: |
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
+      - name: Add pyenv eval
+        blockinfile:
+          path: ~/.bash_profile
+          insertafter: "# <!-- eval END -->"
+          marker: "# <!-- pyenv eval {mark} -->"
+          block: |
+            eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
+      - name: Install python versions
+        command: ~/.pyenv/bin/pyenv install {{ item }} -s
+        args:
+          creates: ~/.pyenv/versions/{{ item }}
+        with_items:
+          - 3.9.1
+          - 3.8.5
+        loop_control:
+          label: '{{ item }}'
+      - name: Create virtual env
+        command: ~/.pyenv/bin/pyenv virtualenv -f {{ item }} .venv{{ item }}
+        with_items:
+          - 3.9.1
+          - 3.8.5
+        loop_control:
+          label: '{{ item }}'
+     become_user: vagrant
 
 # general config -----------------------------------------------------
 
@@ -377,24 +440,25 @@
           state: started
           daemon_reload: yes
 
-
 # project ------------------------------------------------------------
 
    - block: # project
+      - name: Download Project
+        unarchive:
+          src:  https://github.com/delineateio/project/archive/latest.tar.gz
+          dest: /tmp/
+          remote_src: yes
       - name: Add Project
-        git:
-          repo: https://github.com/delineateio/project.git
-          dest: ~/project
-      - name: Recursively remove directory
-        file:
-          path: /home/vagrant/project/.git
-          state: absent
+        command: mv /tmp/project-latest ~/project
+        args:
+          creates: ~/project
       - name: Init Git
-        command: git init
+        command: git init --quiet
         args:
-          chdir: /home/vagrant/project
+          chdir: ~/project
+          creates: ~/project/.git
       - name: Install pre-commit
-        command: pre-commit install
+        command: pre-commit install --install-hooks
         args:
-          chdir: /home/vagrant/project
+          chdir: ~/project
      become_user: vagrant
