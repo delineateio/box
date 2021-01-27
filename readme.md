@@ -11,31 +11,52 @@
 
 ## Purpose
 
-The purpose of **box** is to provide a general purpose development `vagrant` box with a pre-installed set of useful tools.  Over time the installed tools is expected to be expanded.
+The purpose of **box** is to provide a general purpose development environment with a pre-installed set of useful tools.
 
-### Opinionated Initialisation
+> Specifically `box` aims to automate all the fiddly installs, configuration and integration between commonly used tools so it is easier for engineers to get up and running quickly on new projects.
 
-The `box` is deliberately opinionated.  When an `ssh` session is established ...
+---
 
-* The log in process to `github` is initiated using `gh` if required and the credential helper associated with `git`
-* A `gpg` key is created and configured as the signing key for `git` so commits can be verified
-* If a `gcp` service account is mounted at `$HOME/.gcloud.json` then `gcloud` is automatically authenticated and configured
-* If a GKE cluster name is provided then `kubectl` is automatically authenticated and configured
-* An empty project is cloned from a GitHub template repo
+## Contributing
 
-> More detail is provided below on how this initialisation can be configured by projects
+Contributions to this project are welcome!  Please note that [git commit signing](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) is required to contribute to this project.
 
-## Approach
+* [Contribution Guidelines](https://github.com/delineateio/.github/blob/master/CONTRIBUTING.md)
+* [Code of Conduct](https://github.com/delineateio/.github/blob/master/CODE_OF_CONDUCT.md)
 
-The solution uses [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
+---
 
-## Mandatory Requirements
+## Solution
+
+This project provides a `vagrant` box that can be as the base box of project boxes which add further project specific customisations.  The base box is pulished to Vagrant Cloud and can be found [here](https://app.vagrantup.com/delineateio/boxes/box).
+
+---
+
+## Tooling Approach
+
+The `box` is deliberately opinionated and it's primary tools have been determined by those used by engineers on the www.delineate.io project.  You can see the full set of tooling provided by reading the subsequent sections below, however this specifically includes:
+
+* Installs and configures Starship for the command prompt
+* Tools useful for cloud native engineering
+* GCP being used as the primary cloud platform
+* CircleCI is being used as a CI/CD platform
+
+> It is important to note that because of the solution it is possible to override the opinionated decisions if required by using project
+
+---
+
+## Box Development
+
+### Mandatory Local Requirements
+
+The solution heavily relies on [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
 
 The following commands will install the mandatory requirements on MacOS using `brew`...
 
 ```shell
 # Installs Ansible, VirtualBox & Vagrant
 brew install ansible
+brew install --cask virtualbox virtualbox
 brew install --cask virtualbox vagrant
 ```
 
@@ -45,7 +66,9 @@ brew install --cask virtualbox vagrant
 * [Oracle VirtualBox docs](https://www.virtualbox.org/wiki/Documentation)
 * [Hashicorp Vagrant docs](https://www.vagrantup.com/docs)
 
-## Optional Requirements
+> In addition to above there are additional configuration that is required to use some of the capabilities.  Specifically this may involve port forward
+
+### Optional Local Requirements
 
 Optionally Vagrant Manager can be installed on MacOS to provide access from the menu bar.  For more information on Vagrant Manager see [here](https://www.vagrantmanager.com/).
 
@@ -55,6 +78,20 @@ brew install --cask vagrant-manager
 ```
 
 ![vagrant manager](./assets/manager.png)
+
+---
+
+## Packaging
+
+To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) a scripts has been provided.  This script can be found `./package/run.sh`, this script does a couple of things:
+
+1. Builds the box from scratch to ensure it's boxfesh
+2. Additional scripts are run as part of `vagrant up` to clean and minimise the box
+3. An `md5` checksum is generated so that this can be published with the box
+
+> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento](https://github.com/chef/bento) project.  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
+
+---
 
 ## Project Usage
 
@@ -68,11 +105,27 @@ Vagrant.configure("2") do |config|
   config.vm.box = "delineateio/box"
   config.vm.box_version = "1.0.1"
 
-  # access to postgres on default port
+  # http(s) traffic into the box
+  config.vm.network "forwarded_port", guest: 80, host: 80, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 443, host: 443, protocol: "tcp"
+
+  # postgres
   config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp"
 
 end
 ```
+
+### HTTPS Proxy
+
+Installed within the VM is a [caddy](https://caddyserver.com/) reverse proxy which is configured to route traffic to services hosted within the VM.  This is why in the example above ports `80` and `443` are forwarded.
+
+The proxy is used a Let's Encrypt provisioned TLS certificate from Cloudflare.  To enable traffic from the host a entries must be provided in `/etc/hosts`
+
+| IP | Action | Service |
+| --- | ----------- | -----------|
+| 127.0.01 | clusters.getbox.io | Octant |
+
+### Running Box
 
 In the directory where the `vagrantfile` is located, the command `vagrant up --provider virtualbox` can be run to create the VM.
 
@@ -81,29 +134,6 @@ In the directory where the `vagrantfile` is located, the command `vagrant up --p
 ### Providing Env Variables
 
 Projects can be set simply by overwriting the `~/.env` file inside the VM.  An example of this using `ansible` is shown below.  This snippet can be copied into a project ansible configuration.
-
-### SSH Keys
-
-The `ssh` keys for `git` authentication are required to be copied from the host into the VM in the `~./ssh` directory.  Examples of achieving this using `ansible` or `vagrant` are shown below.
-
-> This approach is used rather than generating individual `ssh` keys to avoid the need to maintain many ssh keys including uploading them into `github`.  It is highly likely that this approach will change in the future to use a secrets management solution.
-
-### Startup Scripts
-
-There are a number of scripts that run as part of initialisation when an `ssh` connection is made to the VM:
-
-| Script | Action |
-| --- | ----------- |
-| gh.sh | Triggers the authentication using [gh](https://cli.github.com/) and association with `git`.  Each time the user connects they will be given the choice to re-authenticate (or not). |
-| gpg.sh | Automates the generation of a `gpg` key.  By default the passphrase will be set to `password`, this can be overridden by setting a `$GPG_PASSPHRASE` env variable. |
-| git.sh | Configures `git` automatically, specifically the name, username and signing key.  These details are available from `gh` and `gpg` scripts. |
-| gcloud.sh | If a `gcp` service account is mounted at `~/.gcloud.json` then the VM is authenticated and `gcloud` configured.  Additionally region and zone can be set by providing  `$GOOGLE_REGION` and `$GOOGLE_ZONE` respectively. |
-| kube.sh | A common scenario is for connectivity being required to a GKE cluster.  By providing an en variable `$GOOGLE_CLUSTER_NAME`. |
-| project.sh | Initalises a project directory if one is not present at `~/project`.  This includes setting up `pre-commit` and `detect-secrets` for the project. |
-
-### Env Variables Example
-
-The following shows an example of an env variables file that can be written to `~/.env` to configure the box.  Further custom variables can be set in this file if required.
 
 > Note that the box will successfully start without any of these env variables being provided.
 
@@ -120,6 +150,14 @@ export TERRAFORM_VERSION="latest" # install a specific version of Terraform
 export NODEJS_VERSION="--lts" # install a specific version of Node.js
 ```
 
+> It is proposed that a future version of `box` moves a more structured formal to provide configuration (e.g. `yml`, `json` or `toml`)
+
+### SSH Keys
+
+The `ssh` keys for `git` authentication are required to be copied from the host into the VM in the `~./ssh` directory.  Examples of achieving this using `ansible` or `vagrant` are shown below.
+
+> This approach is used rather than generating individual `ssh` keys to avoid the need to maintain many ssh keys including uploading them into `github`.  It is highly likely that this approach will change in the future to use a secrets management solution.
+
 ### Copying Files to VM
 
 The following snippet can be used in an project Vagrantfile to copy the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` nor able to `git push` to a remote repository.
@@ -131,6 +169,8 @@ config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/id
 ```
 
 > It is also possible to also use Vagrant file provisioners to copy the `~/.gcloud.json`, `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files into the VM if preferred.  Read more details about file provisioners [here](https://www.vagrantup.com/docs/provisioning/file)
+
+---
 
 ## Pre-configured Tools
 
@@ -150,7 +190,6 @@ The following tools and languages are automatically installed using `ansible` as
 ### Security Tools
 
 * [detect-secrets](https://github.com/Yelp/detect-secrets) - Detecting secrets within enterprise code bases before commit
-* [mkcert](https://github.com/FiloSottile/mkcert) - Simple tool for making locally-trusted development certificates
 * [snyk](https://github.com/snyk/snyk) - Find, fix and monitor known vulnerabilities
 * [trivy](https://github.com/aquasecurity/trivy) - Simple and comprehensive vulnerability scanner for containers and other artifacts
 
@@ -203,6 +242,8 @@ The following tools and languages are automatically installed using `ansible` as
 * [ruby](https://www.ruby-lang.org/en/) - A dynamic programming language with a focus on simplicity and productivity
 * [rust](https://www.rust-lang.org/) - Language empowering everyone to build reliable and efficient software
 * [scala](https://www.scala-lang.org/) - Object-oriented and functional programming in one concise, high-level language
+
+---
 
 ## Key Configurations
 
@@ -266,29 +307,18 @@ end
 
 In addition to help with housekeeping a `docker prune -f` job is scheduled using `cron`.
 
-### Nginx
+### Startup Scripts
 
-A proxy has been setup and configured using `mkcert` to issue self sign certificates.
+There are a number of scripts that run as part of initialisation when an `ssh` connection is made to the VM:
 
-> The public certificate must be installed on the host to be able to interact with the services.  See the instructions on this page to configure the host.
-
-The purpose of this proxy is to provide single access point to services hosted in the VM.
-
-If the configuration is required to be updated then the file at `/etc/nginx/sites-enabled/nginx.conf` can be replaced and the service restarted `sudo systemctl restart nginx.service`.
-
-## Packaging
-
-To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) a scripts has been provided.  This script can be found `./package/run.sh`, this script does a couple of things:
-
-1. Builds the box from scratch to ensure it's boxfesh
-2. Additional scripts are run as part of `vagrant up` to clean and minimise the box
-3. An `md5` checksum is generated so that this can be published with the box
-
-> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento](https://github.com/chef/bento) project.  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
-
-## Contributing
-
-Contributions to this project are welcome!
-
-* [Contribution Guidelines](https://github.com/delineateio/.github/blob/master/CONTRIBUTING.md)
-* [Code of Conduct](https://github.com/delineateio/.github/blob/master/CODE_OF_CONDUCT.md)
+| Script | Action |
+| --- | ----------- |
+| gcloud.sh | If a `gcp` service account is mounted at `~/.gcloud.json` then the VM is authenticated and `gcloud` configured.  Additionally region and zone can be set by providing  `$GOOGLE_REGION` and `$GOOGLE_ZONE` respectively. |
+| gh.sh | Triggers the authentication using [gh](https://cli.github.com/) and association with `git`.  Each time the user connects they will be given the choice to re-authenticate (or not). |
+| git.sh | Configures `git` automatically, specifically the name, username and signing key.  These details are available from `gh` and `gpg` scripts. |
+| go.sh | Installs and configures and specific versions of `go` that are required on a specific project indicated by `$GO_VERSION`
+| gpg.sh | Automates the generation of a `gpg` key.  By default the passphrase will be set to `password`, this can be overridden by setting a `$GPG_PASSPHRASE` env variable. |
+| kube.sh | A common scenario is for connectivity being required to a GKE cluster.  By providing an en variable `$GOOGLE_CLUSTER_NAME`. |
+| nodejs.sh | Installs and configures and specific versions of `node` that are required on a specific project supplied through `$NODEJS_VERSION`
+| python.sh | Installs and configures and specific versions of `python` that are required on a specific project indicated by `$PYTHON_VERSION` |
+| project.sh | Initalises a project directory if one is not present at `~/project`.  This includes setting up `pre-commit` and `detect-secrets` for the project. |

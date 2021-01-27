@@ -32,12 +32,17 @@ Vagrant.configure("2") do |config|
     ansible.verbose           = false
   end
 
+  # these are not packaged but enables testing of of
+  config.vm.network "forwarded_port", guest: 80, host: 80, protocol: "tcp" # http
+  config.vm.network "forwarded_port", guest: 443, host: 443, protocol: "tcp" # https
+  config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp" # postgres
+
   # if packaging runs modified scripts from Chef bento project to minimise size
   if packaging == 'true'
     config.vm.provision "shell", path: "./package/cleanup.sh", :privileged => true
     config.vm.provision "shell", path: "./package/minimize.sh", :privileged => true
   end
 
-  config.vm.post_up_message = "You are now ready to develop for https://www.delineate.io"
+  config.vm.post_up_message = "You are now ready to develop for https://www.getbox.io"
 
 end
