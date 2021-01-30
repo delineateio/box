@@ -11,64 +11,34 @@
 
 ## Purpose
 
-The purpose of **box** is to provide a general purpose development environment with a pre-installed set of useful tools.
+The purpose of **box** is to provide a general purpose development environment with a pre-installed set of very useful development tools.  Specifically `box` aims to automate all the fiddly install, config and integration between commonly used tools to make engineers lives easier!
 
-> Specifically `box` aims to automate all the fiddly installs, configuration and integration between commonly used tools so it is easier for engineers to get up and running quickly on new projects.
-
----
+This project provides a `vagrant` box that can be used as the base box for project boxes which add further project specific customisations.  The `box` is published to Vagrant Cloud [here](https://app.vagrantup.com/delineateio/boxes/box).
 
 ## Contributing
 
-Contributions to this project are welcome!  Please note that [git commit signing](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) is required to contribute to this project.
+Contributions to this project are welcome!
 
 * [Contribution Guidelines](https://github.com/delineateio/.github/blob/master/CONTRIBUTING.md)
 * [Code of Conduct](https://github.com/delineateio/.github/blob/master/CODE_OF_CONDUCT.md)
 
----
+Please note that [git commit signing](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) is required to contribute to this project.
 
-## Solution
+## Local Requirements
 
-This project provides a `vagrant` box that can be as the base box of project boxes which add further project specific customisations.  The base box is pulished to Vagrant Cloud and can be found [here](https://app.vagrantup.com/delineateio/boxes/box).
+The solution relies heavily on [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/). The base box is a [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine from the [Chef Bento Project](https://github.com/chef/bento).
 
----
-
-## Tooling Approach
-
-The `box` is deliberately opinionated and it's primary tools have been determined by those used by engineers on the www.delineate.io project.  You can see the full set of tooling provided by reading the subsequent sections below, however this specifically includes:
-
-* Installs and configures Starship for the command prompt
-* Tools useful for cloud native engineering
-* GCP being used as the primary cloud platform
-* CircleCI is being used as a CI/CD platform
-
-> It is important to note that because of the solution it is possible to override the opinionated decisions if required by using project
-
----
-
-## Box Development
-
-### Mandatory Local Requirements
-
-The solution heavily relies on [Hashicorp Vagrant](https://www.vagrantup.com/) and [Redhat Ansible](https://www.ansible.com/) to provision and configure a development [Ubuntu 18.04](https://releases.ubuntu.com/18.04/) machine based on the [Chef Bento Project](https://github.com/chef/bento).
-
-The following commands will install the mandatory requirements on MacOS using `brew`...
+ On MacOS the mandatory tools can be installed using `brew`.
 
 ```shell
 # Installs Ansible, VirtualBox & Vagrant
-brew install ansible
-brew install --cask virtualbox virtualbox
 brew install --cask virtualbox vagrant
 ```
 
-> For additional information including alternative installation methods please review the official documentation
+For additional information including alternative installation methods please review the official documentation:
 
-* [Redhat Ansible](https://docs.ansible.com/)
 * [Oracle VirtualBox docs](https://www.virtualbox.org/wiki/Documentation)
 * [Hashicorp Vagrant docs](https://www.vagrantup.com/docs)
-
-> In addition to above there are additional configuration that is required to use some of the capabilities.  Specifically this may involve port forward
-
-### Optional Local Requirements
 
 Optionally Vagrant Manager can be installed on MacOS to provide access from the menu bar.  For more information on Vagrant Manager see [here](https://www.vagrantmanager.com/).
 
@@ -79,19 +49,15 @@ brew install --cask vagrant-manager
 
 ![vagrant manager](./assets/manager.png)
 
----
-
 ## Packaging
 
-To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) a scripts has been provided.  This script can be found `./package/run.sh`, this script does a couple of things:
+To package the `box` for release on [Vagrant Cloud](https://app.vagrantup.com/) a script has been provided.  This script can be found `./scripts/package.sh`, this script does a couple of things:
 
-1. Builds the box from scratch to ensure it's boxfesh
-2. Additional scripts are run as part of `vagrant up` to clean and minimise the box
-3. An `md5` checksum is generated so that this can be published with the box
+1. Builds the box from scratch to ensure it's box fresh
+2. Runs minimisation scripts during`vagrant up` to clean and minimise the box
+3. Creates an `md5` checksum so that this can be published with the box
 
-> The scripts are called from within the `vagrantfile` - these scripts have been copied and modified from the [Chef Bento](https://github.com/chef/bento) project.  These scripts make a major difference to the file size reducing the unmodified box by two thirds.
-
----
+> The scripts are called from within the `vagrantfile` have been copied and modified from the [Chef Bento](https://github.com/chef/bento) project.  These scripts make a major difference to the file size reducing the unmodified box by two thirds!
 
 ## Project Usage
 
@@ -103,7 +69,7 @@ The VM box created by this project is hosted on Hashicorp Vagrant Cloud [here](h
 Vagrant.configure("2") do |config|
 
   config.vm.box = "delineateio/box"
-  config.vm.box_version = "1.0.1"
+  config.vm.box_version = "1.1.0"
 
   # http(s) traffic into the box
   config.vm.network "forwarded_port", guest: 80, host: 80, protocol: "tcp"
@@ -115,6 +81,90 @@ Vagrant.configure("2") do |config|
 end
 ```
 
+### Project Configuration
+
+To configure specific tools overwrite the `~/.box/config.yml` file with the required settings.  To skip configuration of a tool simply omit the config key.
+
+```yaml
+gcloud:
+  account:    # gcp service account email
+  key:        # gcp service account json
+  project:    # gcp project
+  region:     # gcp region
+  zone:       # gcp region
+  registries: # gcr registry (e.g. eu.gcr.io)
+  cluster:    # gke cluster name
+ssh:
+  private:    # private key
+  public:     # public key
+git:
+  name:       # git name
+  email:      # git email
+tokens:
+  circleci:   # circleci token
+  do:         # digital ocean token
+  github:     # github token
+  snyk:       # snyk token
+golang:       # additional golang versions
+  -
+nodejs:       # additional node versions
+  -
+python:       # additional python versions
+  -
+terraform:    # additional terraform versions
+  -
+use:
+  golang:     # golang version to use
+  nodejs:     # nodejs version to use
+  terraform:  # terraform version to use
+  python:     # python version to use
+apt:
+  packages:
+    -         # additional apt packages
+deb:
+  packages:   # additional deb packages
+    - name:
+      url:
+archive:
+  packages:   # additional archive packages
+    - name:
+      src:
+      dest:
+url:
+  packages:   # additional url packages
+    -
+npm:
+  packages:   # additional npm packages
+    - name:
+      version:
+pip:
+  packages:   # additional pip packages
+    -
+```
+
+If `git` signing is required then a a `gpg` key file should be copied to `~/.box/gpg.key`.  One way of copying the files into the box is to use file provisioners from the project `vagrantfile`.
+
+```ruby
+# copy the config file
+config.vm.provision "file", source: "./gpg.key", destination: "$HOME/.box/gpg.key"
+# copy the gpg key
+config.vm.provision "file", source: "./config.yml", destination: "$HOME/.box/config.yml"
+```
+
+> Once the configuration file is provided or updated then then `box` command can be run inside the VM to reconfigure the box.  **This does not get run automatically, so needs to be run once the VM has been first provisioned.**
+
+### Running Box
+
+In the directory where the `vagrantfile` is located, the command `vagrant up --provider virtualbox` can be run to create the VM.
+
+Note that specific port forwarding should be configured to access tools from the host (e.g. `postgres`, `octant`).  It maybe necessary to explicitly set different host ports to get stable port numbers.`)
+
+```ruby
+config.vm.network "forwarded_port", guest: 80, host: 80, protocol: "tcp" # http
+config.vm.network "forwarded_port", guest: 443, host: 443, protocol: "tcp" # https
+config.vm.network "forwarded_port", guest: 5432, host: 5432, protocol: "tcp" # postgres
+```
+
 ### HTTPS Proxy
 
 Installed within the VM is a [caddy](https://caddyserver.com/) reverse proxy which is configured to route traffic to services hosted within the VM.  This is why in the example above ports `80` and `443` are forwarded.
@@ -123,54 +173,9 @@ The proxy is used a Let's Encrypt provisioned TLS certificate from Cloudflare.  
 
 | IP | Action | Service |
 | --- | ----------- | -----------|
-| 127.0.01 | clusters.getbox.io | Octant |
+| 127.0.0.1 | [https://clusters.getbox.io](https://clusters.getbox.io) | octant |
 
-### Running Box
-
-In the directory where the `vagrantfile` is located, the command `vagrant up --provider virtualbox` can be run to create the VM.
-
-> Note that specific port forwarding should be configured to access tools from the host (e.g. `postgres`, `octant`).  It maybe necessary to explicitly set different host ports to get stable port numbers.
-
-### Providing Env Variables
-
-Projects can be set simply by overwriting the `~/.env` file inside the VM.  An example of this using `ansible` is shown below.  This snippet can be copied into a project ansible configuration.
-
-> Note that the box will successfully start without any of these env variables being provided.
-
-```shell
-export GPG_PASSPHRASE=delineateio # overwrites gpg passcode
-export GOOGLE_REGION="europe-west2" # gcp region
-export GOOGLE_ZONE="europe-west2-a" # gcp
-export GOOGLE_CLUSTER_NAME=app-cluster # gke cluster name
-export SNYK_TOKEN=1ab22c33-ab1c-1a23-abc1-1ab234c56de7 # automatically authenticates to Snyk CLI
-export CIRCLECI_CLI_TOKEN=d14ddce424ed9247857a31e2c92c82a329c7441b # automatically authenticates to CircleCI CLI
-export GO_VERSION=go1.15.7 # Installs (if required) and switches to use go 1.15.7
-export PYTHON_VERSION=3.9.1 # Installs (if required) and switches to use python 3.9.1
-export TERRAFORM_VERSION="latest" # install a specific version of Terraform
-export NODEJS_VERSION="--lts" # install a specific version of Node.js
-```
-
-> It is proposed that a future version of `box` moves a more structured formal to provide configuration (e.g. `yml`, `json` or `toml`)
-
-### SSH Keys
-
-The `ssh` keys for `git` authentication are required to be copied from the host into the VM in the `~./ssh` directory.  Examples of achieving this using `ansible` or `vagrant` are shown below.
-
-> This approach is used rather than generating individual `ssh` keys to avoid the need to maintain many ssh keys including uploading them into `github`.  It is highly likely that this approach will change in the future to use a secrets management solution.
-
-### Copying Files to VM
-
-The following snippet can be used in an project Vagrantfile to copy the required files.  The box will start successfully without this configuration however it will not be authenticated to `gcloud` nor able to `git push` to a remote repository.
-
-```ruby
-config.vm.provision "file", source: "~/.gcloud.json", destination: "~/.gcloud.json"
-config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "~/.ssh/id_rsa"
-config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/id_rsa.pub"
-```
-
-> It is also possible to also use Vagrant file provisioners to copy the `~/.gcloud.json`, `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files into the VM if preferred.  Read more details about file provisioners [here](https://www.vagrantup.com/docs/provisioning/file)
-
----
+> Note that to access these tools from the host then entries need to be added to the `/etc/hosts` file accordingly.
 
 ## Pre-configured Tools
 
@@ -214,12 +219,15 @@ The following tools and languages are automatically installed using `ansible` as
 
 * [psql](http://postgresguide.com/utilities/psql.html) - Interactive terminal for working with Postgres
 
-### Infrastructure Tools
+### Cloud & Infrastructure Tools
 
+* [cloudquery](https://cloudquery.io/) - Transforms your cloud infrastructure into queryable SQL tables or Graphs for easy monitoring, governance and security
+* [doctl](https://github.com/digitalocean/doctl) - Command-line interface (CLI) for DigitalOcean
+* [gcloud](https://cloud.google.com/sdk/docs/install) - Command-line interface (CLI) for Google Cloud Platform
 * [inspec](https://community.chef.io/tools/chef-inspec/) - Turn compliance, security, and other policies into automated tests
 * [osquery](https://osquery.io/) - SQL powered OS instrumentation, monitoring, and analytics framework
 * [packer](https://www.packer.io/) - Automates the creation of any type of machine image
-* [terraform](https://www.terraform.io/) - Infrastructure as code tool that provides a consistent workflow to manage cloud services
+* [tfenv](https://github.com/tfutils/tfenv) - Provides an interface to manage Terraform versions
 
 ### Network Tools
 
@@ -236,41 +244,18 @@ The following tools and languages are automatically installed using `ansible` as
 ## Installed Languages
 
 * [clojure](https://clojure.org/) - Robust, practical, and fast programming language with a set of useful features
-* [go](https://golang.org/) - Language that makes it easy to build simple, reliable, and efficient software
-* [gvm](https://github.com/moovweb/gvm) - gvm provides an interface to manage Go versions.
-* [node](https://nodejs.org/en/) - As an asynchronous event-driven JavaScript runtime designed to build scalable network applications
+* [gvm](https://github.com/moovweb/gvm) - Provides an interface to manage Go versions
+* [nvm](https://github.com/nvm-sh/nvm) - Lets you easily switch between multiple versions of Node.js
+* [pyenv](https://github.com/pyenv/pyenv) - Lets you easily switch between multiple versions of Python
 * [ruby](https://www.ruby-lang.org/en/) - A dynamic programming language with a focus on simplicity and productivity
 * [rust](https://www.rust-lang.org/) - Language empowering everyone to build reliable and efficient software
 * [scala](https://www.scala-lang.org/) - Object-oriented and functional programming in one concise, high-level language
-
----
 
 ## Key Configurations
 
 ### Starship
 
 The `starship` prompt has been installed and configured with simplified configuration from the defaults.  To review the configuration run `bat $HOME/.config/starship.toml`.
-
-### gCloud
-
-The `delineateio` projects are generally hosted on `gcp` by mounting a service account at `$HOME/.gcloud.json`.  This will ensure the authentication is automated.  The configuration to achieve this will look similar to the code block shown below.
-
-```ruby
-Vagrant.configure("2") do |config|
-
-  # adds the .gcloud.json file to allow automation
-  config.vm.provision "file", :run => 'always', source: "~/.gcloud/key.json", destination: "$HOME/.gcloud.json"
-
-end
-```
-
-### GitHub Authentication
-
-The following configuration is pre-configured for `git`.  Post authentication to `github` the `git` user details are configured automatically.
-
-There should be no need to manually edit any `git` configuration before being able to commit.  To view the current configuration standard commands can be used `git config --list`.
-
-![vagrant manager](./assets/github.png)
 
 ### Git Aliases
 
@@ -284,6 +269,8 @@ A number of convenient `git` aliases are provided:
 ### GPG Commit Signing
 
 `git` is pre-configured by default to use `gpg` signing so commits are verified.  To learn more read the `github` documentation on [signing commits](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits).  At present the `gpg` key found at `$HOME/gpg_public` needs to be manually added to `github`.
+
+The requires the addition of the `~/.box/gpg.key` as mentioned earlier in the documentation.
 
 ### Postgres
 
@@ -307,18 +294,6 @@ end
 
 In addition to help with housekeeping a `docker prune -f` job is scheduled using `cron`.
 
-### Startup Scripts
+### CloudQuery
 
-There are a number of scripts that run as part of initialisation when an `ssh` connection is made to the VM:
-
-| Script | Action |
-| --- | ----------- |
-| gcloud.sh | If a `gcp` service account is mounted at `~/.gcloud.json` then the VM is authenticated and `gcloud` configured.  Additionally region and zone can be set by providing  `$GOOGLE_REGION` and `$GOOGLE_ZONE` respectively. |
-| gh.sh | Triggers the authentication using [gh](https://cli.github.com/) and association with `git`.  Each time the user connects they will be given the choice to re-authenticate (or not). |
-| git.sh | Configures `git` automatically, specifically the name, username and signing key.  These details are available from `gh` and `gpg` scripts. |
-| go.sh | Installs and configures and specific versions of `go` that are required on a specific project indicated by `$GO_VERSION`
-| gpg.sh | Automates the generation of a `gpg` key.  By default the passphrase will be set to `password`, this can be overridden by setting a `$GPG_PASSPHRASE` env variable. |
-| kube.sh | A common scenario is for connectivity being required to a GKE cluster.  By providing an en variable `$GOOGLE_CLUSTER_NAME`. |
-| nodejs.sh | Installs and configures and specific versions of `node` that are required on a specific project supplied through `$NODEJS_VERSION`
-| python.sh | Installs and configures and specific versions of `python` that are required on a specific project indicated by `$PYTHON_VERSION` |
-| project.sh | Initalises a project directory if one is not present at `~/project`.  This includes setting up `pre-commit` and `detect-secrets` for the project. |
+If a `gcloud.key` is provided in `~/.box/config.yml` the `cloudquery` which fetch and cache the data locally into postgres so that cloud resource data can be queried.  For more details see the `cloudquery` documentation [here](https://docs.cloudquery.io/).

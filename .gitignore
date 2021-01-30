@@ -1,5 +1,9 @@
-.certs/
+# dirs
+.boxes/
+.secrets/
 .vagrant/
 .vscode/
-.boxes/
+
+# files
 *.log
+*.key

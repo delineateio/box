@@ -3,6 +3,6 @@ clusters.getbox.io {
                 reverse_proxy 127.0.0.1:7777
         }
         tls {
-                dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+                dns cloudflare "{env.CLOUDFLARE_API_TOKEN}"
         }
 }

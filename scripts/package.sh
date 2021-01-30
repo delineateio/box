@@ -2,7 +2,7 @@
 set -e
 
 ###################################################################
-# Script Name	: build.sh
+# Script Name	: package.sh
 # Description	: Build and optimi the Vagrant box
 # Args          : None
 # Author       	: Jonathan Fenwick
