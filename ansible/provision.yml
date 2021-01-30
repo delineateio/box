@@ -4,9 +4,17 @@
   gather_facts: false
   hosts: all
   vars:
-    ansible_python_interpreter: /usr/bin/python3.6
+    ansible_python_interpreter: '/usr/bin/python3.6'
   become: true
   tasks:
+
+# variables ------------------------------------------------------------
+
+   - name: Add vars
+     include_vars:
+      dir: vars
+      extensions:
+        - 'yml'
 
 # bootstrap ------------------------------------------------------------
 
@@ -36,12 +44,11 @@
      copy:
       src: '{{ item.src }}'
       dest: '{{ item.dest }}'
-      force: no
+      force: '{{ item.force }}'
      with_items:
-      - { name: nano, src: ./config/nanorc, dest: ~/.nanorc }
-      - { name: pip, src: ./config/pip.conf, dest: ~/.pip/pip.conf }
-      - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile }
-      - { name: title, src: ./config/title, dest: ~/.title }
+      - { name: nano, src: ./config/nanorc, dest: ~/.nanorc, force: yes}
+      - { name: pip, src: ./config/pip.conf, dest: ~/.pip/pip.conf, force: yes }
+      - { name: profile, src: ./config/bash_profile, dest: ~/.bash_profile, force: no }
      loop_control:
       label: '{{ item.name }}'
      become_user: vagrant
@@ -91,7 +98,6 @@
       - { name: github, repo: 'deb https://cli.github.com/packages bionic main' }
       - { name: osquery, repo: 'deb [arch=amd64] https://pkg.osquery.io/deb deb main' }
       - { name: pack, repo: 'ppa:cncf-buildpacks/pack-cli' }
-      - { name: python, repo: 'ppa:deadsnakes/ppa' }
       - { name: ruby, repo: 'ppa:brightbox/ruby-ng' }
      loop_control:
       label: '{{ item.name }}'
@@ -103,61 +109,7 @@
 
    - name: Install apt packages
      apt:
-      pkg:
-       - apt-transport-https=1.6.12ubuntu0.2
-       - bison=2:3.0.4.dfsg-1build1
-       - build-essential=12.4ubuntu1
-       - build-essential=12.4ubuntu1
-       - containerd.io=1.4.3-1
-       - default-jre=2:1.11-68ubuntu1~18.04.1
-       - docker-ce-cli=5:20.10.2~3-0~ubuntu-bionic
-       - docker-ce=5:20.10.2~3-0~ubuntu-bionic
-       - figlet=2.2.5-3
-       - fonts-firacode=1.204-2
-       - gcc=4:7.4.0-1ubuntu2.3
-       - gh=1.5.0
-       - gnupg2=2.2.4-1ubuntu1.3
-       - google-cloud-sdk-skaffold=323.0.0-0
-       - google-cloud-sdk=323.0.0-0
-       - httpie=0.9.8-2
-       - iotop=0.6-2
-       - jq=1.5+dfsg-2
-       - kubectl=1.20.2-00
-       - libbz2-dev=1.0.6-8.1ubuntu0.2
-       - libffi-dev=3.2.1-8
-       - liblzma-dev=5.2.2-1.3
-       - libncurses5-dev=6.1-1ubuntu1.18.04
-       - libnss3-tools=2:3.35-2ubuntu2.12
-       - libreadline-dev=7.0-3
-       - libsqlite3-dev=3.22.0-1ubuntu0.4
-       - libssl-dev=1.1.1-1ubuntu2.1~18.04.7
-       - libxml2-dev=2.9.4+dfsg1-6.1ubuntu1.3
-       - llvm=1:6.0-41~exp5~ubuntu1
-       - lolcat=42.0.99-1
-       - make=4.1-9.1ubuntu1
-       - mtr=0.92-1
-       - neofetch=3.4.0-1
-       - nmap=7.60-1ubuntu5
-       - nmon=16g+debian-3
-       - osquery=4.5.1-1.linux
-       - pack-cli=0.16.0-0ubuntu1~bionic
-       - pinentry-curses=1.1.0-1
-       - pinentry-gtk2=1.1.0-1
-       - pkg-config=0.29.1-0ubuntu2
-       - postgresql-client=10+190ubuntu0.1
-       - python3-pip=9.0.1-2.3~ubuntu1.18.04.4
-       - rlwrap=0.43-1
-       - rng-tools=5-0ubuntu4
-       - ruby2.6-dev=2.6.6-1bbox1~bionic1
-       - ruby2.6=2.6.6-1bbox1~bionic1
-       - screen=4.6.2-1ubuntu1
-       - shellcheck=0.4.6-1
-       - tk-dev=8.6.0+9
-       - tree=1.7.0-5
-       - unzip=6.0-21ubuntu1.1
-       - xz-utils=5.2.2-1.3
-       - zip=3.0-11build1
-       - zlib1g-dev=1:1.2.11.dfsg-0ubuntu2
+      pkg: '{{ apt.packages }}'
       state: present
       install_recommends: no
 
@@ -165,11 +117,11 @@
      apt:
       deb: '{{ item.deb }}'
      with_items:
-      - { name: bat, deb: 'https://github.com/sharkdp/bat/releases/download/v0.17.1/bat_0.17.1_amd64.deb' }
-      - { name: octant, deb: 'https://github.com/vmware-tanzu/octant/releases/download/v0.16.3/octant_0.16.3_Linux-64bit.deb' }
-      - { name: scala, deb: 'https://downloads.lightbend.com/scala/2.12.12/scala-2.12.12.deb' }
-      - { name: trivy, deb: 'https://github.com/aquasecurity/trivy/releases/download/v0.9.1/trivy_0.9.1_Linux-64bit.deb' }
-      - { name: xcaddy, deb: 'https://github.com/caddyserver/xcaddy/releases/download/v0.1.7/xcaddy_0.1.7_linux_amd64.deb' }
+      - { name: bat, deb: 'https://github.com/sharkdp/bat/releases/download/v0.17.1/bat_{{ versions.bat }}_amd64.deb' }
+      - { name: octant, deb: 'https://github.com/vmware-tanzu/octant/releases/download/v{{ versions.octant }}/octant_{{ versions.octant }}_Linux-64bit.deb' }
+      - { name: scala, deb: 'https://downloads.lightbend.com/scala/{{ versions.scala }}/scala-{{ versions.scala }}.deb' }
+      - { name: trivy, deb: 'https://github.com/aquasecurity/trivy/releases/download/v{{ versions.trivy }}/trivy_{{ versions.trivy }}_Linux-64bit.deb' }
+      - { name: xcaddy, deb: 'https://github.com/caddyserver/xcaddy/releases/download/v{{ versions.xcaddy }}/xcaddy_{{ versions.xcaddy }}_linux_amd64.deb' }
      loop_control:
       label: '{{ item.name }}'
 
@@ -190,7 +142,7 @@
        git:
          repo: https://github.com/tfutils/tfenv.git
          dest: ~/.tfenv
-         version: v2.0.0
+         version: 'v{{ versions.tfenv }}'
      - name: Create symbolic links to tfenv scripts
        file:
          src: ~/.tfenv/bin/{{ item }}
@@ -199,41 +151,46 @@
        loop:
        - tfenv
        - terraform
+     - name: Install terraform versions
+       command: 'tfenv install {{ item }}'
+       with_items: '{{ terraform }}'
+       loop_control:
+         label: '{{ item }}'
+     - name: Select terraform version
+       command: 'tfenv use {{ versions.terraform }}'
      become_user: vagrant
 
 # installs (nvm & node)  ---------------------------------------------
 
-   - name: Install nvm and node
+   - name: Install node and nvm
      block:
      - name: Clone nvm repository
        git:
          repo: https://github.com/nvm-sh/nvm.git
          dest: ~/.nvm
-         version: v0.37.2
-     - name: Install Node.js v10
+         version: 'v{{ versions.nvm }}'
+     - name: Install Node.js versions
        shell:
-         cmd: 'source ~/.nvm/nvm.sh && {{ item }}'
+         cmd: 'source ~/.nvm/nvm.sh && nvm install --no-progress --default {{ item }}'
+         creates: ~/.nvm/versions/node/v{{ item }}/bin/node
          executable: /bin/bash
-       loop:
-       - nvm install --no-progress --default v10
-       - nvm which default
+       with_items: "{{ nodejs }}"
        register: nvm
+     - name: Select Node.js versions.bat
+       shell:
+         cmd: 'source ~/.nvm/nvm.sh && nvm which {{ versions.nodejs }}'
+         executable: /bin/bash
      - name: Get node/npm path from nvm
        shell: dirname '{{ nvm.results[-1].stdout }}'
        register: nvm_path
      become_user: vagrant
-
    - name: Install npm packages
      npm:
       name: '{{ item.name }}'
       version: '{{ item.version }}'
       state: present
       global: yes
-     with_items:
-      - { name: express, version: 4.17.1 }
-      - { name: serverless, version: 2.18.0 }
-      - { name: snyk, version: 1.437.3 }
-      - { name: stts, version: 1.2.2 }
+     with_items: '{{ npm.packages }}'
      loop_control:
       label: '{{ item.name }}'
      environment:
@@ -243,10 +200,7 @@
 
    - name: Install pip packages
      pip:
-      name:
-       - docker==4.4.1
-       - detect-secrets==0.14.3
-       - pre-commit==2.9.3
+      name: '{{ pip.packages }}'
 
 # installs (unarchive)  ----------------------------------------------
 
@@ -257,12 +211,11 @@
           dest: '{{ item.dest }}'
           remote_src: yes
         with_items:
-          - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.2/docker-credential-gcr_linux_amd64-2.0.2.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
-          - { name: golang, src: 'https://golang.org/dl/go1.15.6.linux-amd64.tar.gz', dest: /, creates: /go/bin }
-          - { name: packer, src: 'https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
+          - { name: docker-credential-gcr, src: 'https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v{{ versions.docker_credential_gcr }}/docker-credential-gcr_linux_amd64-{{ versions.docker_credential_gcr }}.tar.gz', dest: /usr/local/bin/, creates: /usr/local/bin/docker-credential-gcr}
+          - { name: golang, src: 'https://golang.org/dl/go{{ versions.golang }}.linux-amd64.tar.gz', dest: /, creates: /go/bin }
+          - { name: packer, src: 'https://releases.hashicorp.com/packer/{{ versions.packer }}/packer_{{ versions.packer }}_linux_amd64.zip', dest: /usr/local/bin/, creates: /usr/local/bin/packer}
         loop_control:
           label: '{{ item.name }}'
-
    - name: Get url installs
      get_url:
       url: '{{ item.url }}'
@@ -270,7 +223,7 @@
       mode: '755'
      with_items:
       - { name: hey, url: 'https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64', dest: /usr/local/bin/hey }
-      - { name: st, url: 'https://storage.googleapis.com/container-structure-test/v1.9.1/container-structure-test-linux-amd64', dest: /usr/local/bin/container-structure-test }
+      - { name: cst, url: 'https://storage.googleapis.com/container-structure-test/v{{ versions.cst }}/container-structure-test-linux-amd64', dest: /usr/local/bin/container-structure-test }
      loop_control:
       label: '{{ item.name }}'
 
@@ -339,14 +292,12 @@
         blockinfile:
           path: /etc/hosts
           block: |
-            {{ item.ip }} {{ item.name }}
-          marker: "#  host '{{ item.name }}' {mark} "
-        loop:
-          - { name: clusters.getbox.io, ip: 127.0.0.1 }
+            {{ item.ip }}  {{ item.domain }}
+          marker: "#  host '{{ item }}' {mark} "
+        with_items: '{{ hosts }}'
         loop_control:
-          label: '{{ item.ip }} -> {{ item.name }}'
+          label: '{{ item.name }} -> {{ item.domain }}'
      become: yes
-
 
    - block: # shell installs
       - name: Shell installs (root)
@@ -357,10 +308,10 @@
           warn: false
         with_items:
           - { name: bat, cmd: 'curl -fsSL https://starship.rs/install.sh | bash -s -- -y', creates: /usr/local/bin/starship }
-          - { name: clojure, cmd: 'curl -fLSs https://download.clojure.org/install/linux-install-1.10.1.763.sh | bash', creates: /usr/local/bin/clj }
-          - { name: circleci, cmd: 'curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | VERSION=0.1.11540 bash', creates: /usr/local/bin/circleci}
-          - { name: golangci, cmd: 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.33.0', creates: /usr/local/bin/golangci-lint}
-          - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v 4.24.8 -P inspec', creates: /usr/bin/inspec }
+          - { name: clojure, cmd: 'curl -fLSs https://download.clojure.org/install/linux-install-{{ versions.clojure }}.sh | bash', creates: /usr/local/bin/clj }
+          - { name: circleci, cmd: 'curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | VERSION={{ versions.circleci }} bash', creates: /usr/local/bin/circleci}
+          - { name: golangci, cmd: 'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v{{ versions.golangci_lint }}', creates: /usr/local/bin/golangci-lint}
+          - { name: inspec, cmd: 'curl https://omnitruck.chef.io/install.sh | bash -s -- -v {{ versions.inspec }} -P inspec', creates: /usr/bin/inspec }
         loop_control:
           label: '{{ item.name }}'
       - name: Shell installs (vagrant)
@@ -383,12 +334,12 @@
         git:
           repo: https://github.com/pyenv/pyenv.git
           dest: ~/.pyenv
-          version: v1.2.22
+          version: 'v{{ versions.pyenv }}'
       - name: Clone pyenv-virtualenv
         git:
           repo: https://github.com/pyenv/pyenv-virtualenv.git
           dest: ~/.pyenv/plugins/pyenv-virtualenv
-          version: v1.1.5
+          version: 'v{{ versions.pyenv_virtualenv }}'
       - name: Add pyenv variables
         blockinfile:
           path: ~/.bash_profile
@@ -409,18 +360,14 @@
         command: ~/.pyenv/bin/pyenv install {{ item }} -s
         args:
           creates: ~/.pyenv/versions/{{ item }}
-        with_items:
-          - 3.9.1
-          - 3.8.5
+        with_items: "{{ python }}"
         loop_control:
           label: '{{ item }}'
       - name: Create virtual env
         command: ~/.pyenv/bin/pyenv virtualenv -f {{ item }} .venv{{ item }}
         args:
             creates: ~/.pyenv/versions/{{ item }}/envs/.venv{{ item }}/
-        with_items:
-          - 3.9.1
-          - 3.8.5
+        with_items: "{{ python }}"
         loop_control:
           label: '{{ item }}'
      become_user: vagrant
@@ -498,7 +445,7 @@
       - name: Postgres container
         docker_container:
           name: postgres
-          image: postgres:11.6
+          image: 'postgres:{{ versions.postgres }}'
           state: started
           restart_policy: always
           ports:
