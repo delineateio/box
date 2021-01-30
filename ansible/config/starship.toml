@@ -22,7 +22,7 @@ success_symbol = "[➜](bold green)"
 symbol = "🔺 "
 
 [gcloud]
-format = 'on $symbol $project($style) '
+format = ' on $symbol $project($style) '
 
 [python]
 python_binary = "python3"

@@ -23,6 +23,8 @@ Vagrant.configure("2") do |config|
     config.vm.provision "file", source: "./ansible/scripts", destination: "$HOME/.scripts"
   else
     config.vm.synced_folder "./ansible/scripts", "/home/vagrant/.scripts"
+    # maintain certs between box builds
+    # config.vm.synced_folder "./.certs", "/home/vagrant/.local/share/caddy", owner: "vagrant"
   end
 
   config.vm.provision "ansible_local" do |ansible|

@@ -1,5 +1,5 @@
 # <!-- alias BEGIN -->
-alias clear="clear && figlet $(cat .title) | lolcat --seed 18" # overrides clear
+alias clear="clear && figlet 'getbox.io' | lolcat --seed 18" # overrides clear
 # <!-- alias END -->
 
 # <!-- path BEGIN -->
@@ -32,6 +32,7 @@ clear
 # <!-- clear END -->
 
 # <!-- init BEGIN -->
+echo
 bash "$HOME/.scripts/init.sh"
 cd "$HOME/project"
 # <!-- init END -->

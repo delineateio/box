@@ -1,0 +1,32 @@
+golang:
+  - '1.15.7'
+nodejs:
+  - '10.23.2'
+python:
+  - '3.6.12'
+  - '3.8.5'
+  - '3.9.1'
+terraform:
+  - '0.14.5'
+versions:
+  bat: '0.17.1'
+  circleci: '0.1.11540'
+  clojure: '1.10.1.763'
+  cst: '1.9.1'
+  docker_credential_gcr: '2.0.2'
+  golang: '1.15.7'
+  golangci_lint: '1.33.0'
+  inspec: '4.24.8'
+  nodejs: '10.23.2'
+  nvm: '0.37.2'
+  octant: '0.16.3'
+  packer: '1.6.6'
+  postgres: '11.6'
+  pyenv: '1.2.22'
+  pyenv_virtualenv: '1.1.5'
+  python: '3.9.1'
+  scala: '2.12.12'
+  terraform: '0.14.5'
+  tfenv: '2.0.0'
+  trivy: '0.9.1'
+  xcaddy: '0.1.7'
