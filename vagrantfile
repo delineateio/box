@@ -20,17 +20,15 @@ Vagrant.configure("2") do |config|
 
   # if packaging the box copies files otherwises syncs for better dev experience
   if packaging == 'true'
-    config.vm.provision "file", source: "./ansible/scripts", destination: "$HOME/.scripts"
+    config.vm.provision "file", source: "./ansible/config", destination: "$HOME/.box"
   else
-    config.vm.synced_folder "./ansible/scripts", "/home/vagrant/.scripts"
-    # maintain certs between box builds
-    # config.vm.synced_folder "./.certs", "/home/vagrant/.local/share/caddy", owner: "vagrant"
+    config.vm.synced_folder "./ansible/config", "/home/vagrant/.box"
   end
 
   config.vm.provision "ansible_local" do |ansible|
     ansible.version           = "2.9.17"
-    ansible.provisioning_path = "/ansible"
-    ansible.playbook          = "provision.yml"
+    ansible.provisioning_path = "/ansible/provision"
+    ansible.playbook          = "playbook.yml"
     ansible.verbose           = false
   end
 
@@ -41,8 +39,8 @@ Vagrant.configure("2") do |config|
 
   # if packaging runs modified scripts from Chef bento project to minimise size
   if packaging == 'true'
-    config.vm.provision "shell", path: "./package/cleanup.sh", :privileged => true
-    config.vm.provision "shell", path: "./package/minimize.sh", :privileged => true
+    config.vm.provision "shell", path: "./scripts/cleanup.sh", :privileged => true
+    config.vm.provision "shell", path: "./scripts/minimize.sh", :privileged => true
   end
 
   config.vm.post_up_message = "You are now ready to develop for https://www.getbox.io"

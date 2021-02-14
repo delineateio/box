@@ -1,0 +1,19 @@
+# gcloud:
+#  account:    # gcp service account email
+#  key:        # gcp service account json
+#  project:    # gcp project
+#  region:     # gcp region
+#  zone:       # gcp region
+#  registries: # gcr registry (e.g. eu.gcr.io)
+#  cluster:    # gke cluster name
+# ssh:
+#  private:    # private key
+#  public:     # public key
+# git:
+#  name:       # git name
+#  email:      # git email
+# tokens:
+#  circleci:   # circleci token
+#  do:         # digital ocean token
+#  github:     # github token
+#  snyk:       # snyk token

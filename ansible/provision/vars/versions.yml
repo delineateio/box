@@ -1,0 +1,36 @@
+golang:
+  - 1.15.7
+nodejs:
+  - 10.23.2
+python:
+  - 3.9.1
+terraform:
+  - 0.14.5
+versions:
+  bat: 0.17.1                   # https://github.com/sharkdp/bat
+  circleci: 0.1.11924           # https://github.com/CircleCI-Public/circleci-cli
+  clojure: 1.10.1.763           # https://clojure.org/guides/getting_started#_installation_on_linux
+  cloudquery: 0.8.10            # https://github.com/cloudquery/cloudquery
+  cst: 1.10.0                   # https://github.com/GoogleContainerTools/container-structure-test
+  docker: 4.4.1                 # https://pypi.org/project/docker/
+  docker_credential_gcr: 2.0.2  # https://github.com/GoogleCloudPlatform/docker-credential-gcr
+  doctl: 1.54.0                 # https://github.com/digitalocean/doctl
+  golang: 1.15.7
+  golangci_lint: 1.36.0         # https://github.com/golangci/golangci-lint
+  inspec: 4.26.4                # https://github.com/inspec/inspec
+  nvm: 0.37.2                   # https://github.com/nvm-sh/nvm
+  octant: 0.16.3                # https://github.com/vmware-tanzu/octant
+  packer: 1.6.6                 # https://github.com/hashicorp/packer
+  pyenv: 1.2.22                 # https://github.com/pyenv/pyenv
+  pyenv_virtualenv: 1.1.5       # https://github.com/pyenv/pyenv-virtualenv
+  scala: 2.12.12                # https://docs.scala-lang.org/getting-started/index.html
+  tfenv: 2.1.0                  # https://github.com/tfutils/tfenv
+  trivy: 0.10.0                  # https://github.com/aquasecurity/trivy
+  xcaddy: 0.1.7                 # https://github.com/caddyserver/xcaddy
+use: # use from the installed versions
+  golang: 1.15.7
+  nodejs: 10.23.2
+  terraform: 0.14.5
+  python: 3.9.1
+tags:
+  postgres: 11.6

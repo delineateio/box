@@ -1,0 +1,273 @@
+---
+- name: Local
+  connection: local
+  hosts: 127.0.0.1
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
+  become_user: vagrant
+  tasks:
+
+# variables ------------------------------------------------------------
+
+   - name: add secret vars
+     include_vars:
+      file: ./config.yml
+
+# ssh ------------------------------------------------------------------
+
+   - name: ssh
+     block:
+      - name: add private ssh key
+        copy:
+          content: '{{ ssh.private }}'
+          dest: '~/.ssh/id_rsa'
+        when: ssh.private is defined
+      - name: add public ssh key
+        copy:
+          content: '{{ ssh.public }}'
+          dest: '~/.ssh/id_rsa.pub'
+        when: ssh.public is defined
+
+# gpg ------------------------------------------------------------------
+
+   - name: add private gpg key
+     shell:  gpg2 --import ~/.gpg.key
+     args:
+      removes: ~/.gpg.key
+   - name: get private gpg id
+     shell: gpg2 --list-secret-keys --keyid-format LONG | grep ^sec | tail -1 | cut -f 2 -d '/' | cut -f 1 -d ' '
+     args:
+      removes: ~/.gpg.key
+     register: gpg_id
+
+# git ------------------------------------------------------------
+
+   - name: git
+     block:
+      - name: add git name
+        git_config:
+          name: user.name
+          scope: global
+          value: '{{ git.name }}'
+      - name: add git email
+        git_config:
+          name: user.email
+          scope: global
+          value: '{{ git.email }}'
+      - name: add git signing key
+        git_config:
+          name: user.signingkey
+          scope: global
+          value: '{{ gpg_id.stdout }}'
+     when:
+       - git.name is defined
+       - git.email is defined
+       - gpg_id.stdout != ''
+
+# project ------------------------------------------------------------
+
+   - name: Checks project
+     stat:
+       path: ~/project
+     register: project
+
+   - name: project
+     block:
+      - name: download project
+        unarchive:
+          src:  https://github.com/delineateio/project/archive/latest.tar.gz
+          dest: /tmp/
+          remote_src: yes
+        args:
+          creates: ~/project
+      - name: add project
+        command: mv /tmp/project-latest ~/project
+        args:
+          creates: ~/project
+      - name: init git
+        command: git init --quiet
+        args:
+          chdir: ~/project
+          creates: ~/project/.git
+      - name: install pre-commit
+        command: pre-commit install
+        args:
+          chdir: ~/project
+      - name: add project config
+        blockinfile:
+          path: ~/.bash_profile
+          marker: '# <--- project {mark} --->'
+          marker_begin: start
+          marker_end: end
+          block: |
+            if [ -d "$HOME/project" ]; then
+                cd "$HOME/project"
+            fi
+     when: not project.stat.exists
+
+
+# gcloud ---------------------------------------------------------
+
+   - name: gcloud
+     block:
+      - name: add gcp key file
+        copy:
+          dest: ~/.gcloud.json
+          content: '{{ gcloud.key }}'
+        when: gcloud.key is defined
+      - name: authenticate gcp account
+        shell: gcloud auth activate-service-account '{{ gcloud.account}}' --key-file='{{ lookup('env', 'GOOGLE_APPLICATION_CREDENTIALS') }}'
+        when: gcloud.account is defined
+      - name: set gcp project
+        shell: gcloud config set project '{{ gcloud.project }}'
+        when: gcloud.project is defined
+      - name: set gcp region
+        shell: gcloud config set compute/region '{{ gcloud.region }}'
+        when: gcloud.region is defined
+      - name: set gcp zone
+        shell: gcloud config set compute/zone '{{ gcloud.zone }}'
+        when: gcloud.zone is defined
+      - name: configure gcr
+        shell: gcloud auth configure-docker '{{ gcloud.registries }}'  -q
+        when: gcloud.registries is defined
+     when: gcloud is defined
+
+# cloudquery -----------------------------------------------------
+
+   - name: cloudquery fetch
+     shell: |
+      cloudquery gen config gcp --force
+      cloudquery fetch --driver postgresql --dsn "host=localhost user=postgres password=postgres DB.name=postgres port=5432"  # pragma: allowlist secret
+     args:
+       chdir: /tmp
+     when: gcloud.key is defined
+
+# authenticate ---------------------------------------------------------
+
+   - name: authentication
+     block:
+      - name: authenticate to digital ocean
+        command: doctl auth init -t '{{ tokens.do }}'
+        when: tokens.do is defined
+      - name: authenticate to circleci
+        command: circleci setup --token '{{ tokens.circleci }}' --no-prompt
+        when: tokens.circleci is defined
+      - name: authenticate to snyk
+        command: snyk auth '{{ tokens.snyk }}'
+        when: tokens.snyk is defined
+      - name: authenticate to github
+        shell: echo '{{ tokens.github }} ' | gh auth login --with-token
+        when: tokens.github is defined
+     when: tokens is defined
+
+# golang ---------------------------------------------------------
+
+   - name: go
+     block:
+      - name: install go versions
+        command: gvm install 'go{{ item }}'
+        with_items: '{{ golang }}'
+        loop_control:
+          label: '{{ item }}'
+        when: golang is defined
+      - name: use go version
+        shell:
+          cmd: source ~/.gvm/scripts/gvm && gvm use 'go{{ use.golang }}' --default
+          executable: /bin/bash
+        when: use.golang is defined
+
+# nodejs ---------------------------------------------------------
+
+   - name: node
+     block:
+      - name: install node versions
+        shell:
+         cmd: source ~/.nvm/nvm.sh && nvm install --no-progress --default '{{ item }}'
+         executable: /bin/bash
+        with_items: '{{ nodejs }}'
+        loop_control:
+          label: '{{ item }}'
+        when: nodejs is defined
+      - name: use node version
+        shell:
+          cmd: source ~/.nvm/nvm.sh && nvm use '{{ use.nodejs }}' --default
+          executable: /bin/bash
+        when: use.nodejs is defined
+
+# python ---------------------------------------------------------
+
+   - name: python
+     block:
+      - name: install python versions
+        shell: "pyenv install -s '{{ item }}'"
+        args:
+          creates: ~/.pyenv/versions/{{ item }}
+        with_items: '{{ python }}'
+        loop_control:
+          label: '{{ item }}'
+        when: python is defined
+      - name: use python version
+        command: pyenv virtualenv '{{ item }}' '.venv{{ item }}'
+        args:
+          creates: ~/.pyenv/versions/{{ item }}/envs/.venv{{ item }}/
+        with_items: '{{ python }}'
+        loop_control:
+          label: '{{ item }}'
+        when: python is defined
+      - name: upgrades pip
+        command: python -m pip install --upgrade pip
+        args:
+          chdir: ~/project
+
+# terraform ------------------------------------------------------
+
+   - name: terraform
+     block:
+      - name: install terraform versions
+        command: tfenv install '{{ item }}'
+        with_items: '{{ terraform }}'
+        loop_control:
+          label: '{{ item }}'
+        when: terraform is defined
+      - name: use terraform version
+        command: tfenv use '{{ use.terraform }}'
+        when: use.terraform is defined
+
+# kubectl --------------------------------------------------------
+
+   - name: Checks cluster
+     command: gcloud container clusters describe '{{ gcloud.cluster }}'
+     register: cluster
+     ignore_errors: true
+     when: gcloud.key is defined
+     args:
+      warn: false
+
+   - name: kubectl
+     block:
+      - name: create ~/.kube directory
+        file:
+          path: ~/.kube
+          state: directory
+          owner: vagrant
+      - name: remove ~/.docker/config.json
+        file:
+          path: ~/.docker/config.json
+          state: absent
+      - name: remove ~/.kube/config
+        file:
+          path: ~/.kube/config
+          state: absent
+      - name:
+        block:
+         - name: get cluster credentials
+           command: gcloud container clusters get-credentials '{{ gcloud.cluster }}' -q
+         - name: Rename kube context
+           shell: kubectl config rename-context '$(kubectl config current-context)' dev
+         - name: Set kube context
+           command: kubectl config use-context dev
+        when:
+          - cluster is not skipped
+          - cluster is succeeded
+     when: gcloud.cluster is defined
